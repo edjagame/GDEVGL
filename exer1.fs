@@ -13,8 +13,9 @@
 
 in vec3 shaderColor;
 out vec4 fragmentColor;
+uniform float glow;
 
 void main()
-{
+{   
     fragmentColor = vec4(shaderColor, 1.0f);
 }

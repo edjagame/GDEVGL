@@ -25,7 +25,6 @@
 #define WINDOW_WIDTH  640
 #define WINDOW_HEIGHT 360
 #define WINDOW_TITLE  "CRYO VISION"
-#define PI 3.1416
 #define I_CENTER 0
 #define I_HEXAGON 6
 GLFWwindow *pWindow;
@@ -37,18 +36,18 @@ float vertices[] =
     {
 //DODECAGON
  0.0000,  0.0000,    0.0f, 1.0f, 1.0f, 1.0f, //0
- 0.2812,  0.0000,    0.0f, 0.5f, 0.8f, 0.9f, //1
- 0.2436,  0.2500,    0.0f, 0.5f, 0.8f, 0.9f, //2
- 0.1406,  0.4330,    0.0f, 0.5f, 0.8f, 0.9f, //3
- 0.0000,  0.5000,    0.0f, 0.5f, 0.8f, 0.9f, //4
--0.1406,  0.4330,    0.0f, 0.5f, 0.8f, 0.9f, //5
--0.2436,  0.2500,    0.0f, 0.5f, 0.8f, 0.9f, //6
--0.2812,  0.0000,    0.0f, 0.5f, 0.8f, 0.9f, //7
--0.2436, -0.2500,    0.0f, 0.5f, 0.8f, 0.9f, //8
--0.1406, -0.4330,    0.0f, 0.5f, 0.8f, 0.9f, //9
--0.0000, -0.5000,    0.0f, 0.5f, 0.8f, 0.9f, //10
- 0.1406, -0.4330,    0.0f, 0.5f, 0.8f, 0.9f, //11
- 0.2436, -0.2500,    0.0f, 0.5f, 0.8f, 0.9f, //12
+ 0.2812,  0.0000,    0.0f, 0.5f, 0.8f, 1.0f, //1
+ 0.2436,  0.2500,    0.0f, 0.5f, 0.8f, 1.0f, //2
+ 0.1406,  0.4330,    0.0f, 0.5f, 0.8f, 1.0f, //3
+ 0.0000,  0.5000,    0.0f, 0.5f, 0.8f, 1.0f, //4
+-0.1406,  0.4330,    0.0f, 0.5f, 0.8f, 1.0f, //5
+-0.2436,  0.2500,    0.0f, 0.5f, 0.8f, 1.0f, //6
+-0.2812,  0.0000,    0.0f, 0.5f, 0.8f, 1.0f, //7
+-0.2436, -0.2500,    0.0f, 0.5f, 0.8f, 1.0f, //8
+-0.1406, -0.4330,    0.0f, 0.5f, 0.8f, 1.0f, //9
+-0.0000, -0.5000,    0.0f, 0.5f, 0.8f, 1.0f, //10
+ 0.1406, -0.4330,    0.0f, 0.5f, 0.8f, 1.0f, //11
+ 0.2436, -0.2500,    0.0f, 0.5f, 0.8f, 1.0f, //12
 
 //SNOWFLAKE INNER 1
  0.0000,  0.0000,    0.0f, 1.0f, 1.0f, 1.0f, //13
@@ -81,6 +80,7 @@ float vertices[] =
  0.0146, -0.0966,    0.0f, 1.0f, 1.0f, 1.0f, //38
 
 //SNOWFLAKE OUTER 1
+
  0.0000,  0.0000,    0.0f, 1.0f, 1.0f, 1.0f, //39
  0.1453,  0.0877,    0.0f, 1.0f, 1.0f, 1.0f, //40
  0.1682,  0.1474,    0.0f, 1.0f, 1.0f, 1.0f, //41
@@ -181,8 +181,8 @@ float vertices[] =
 //TOP
  0.0420,  0.7500,    0.0f, 0.5f, 0.5f, 0.5f, //125
 -0.0420,  0.7500,    0.0f, 0.5f, 0.5f, 0.5f, //126
- 0.0000,  0.9000,    0.0f, 0.6f, 0.6f, 0.6f, //127
- 0.0000,  1.0000,    0.0f, 0.6f, 0.6f, 0.6f, //128
+ 0.0000,  0.9000,    0.0f, 0.5f, 0.5f, 0.5f, //127
+ 0.0000,  1.0000,    0.0f, 0.5f, 0.5f, 0.5f, //128
 
 //BOTTOM
  0.0000, -1.0000,    0.0f, 0.5f, 0.5f, 0.5f, //129
@@ -408,16 +408,21 @@ void render()
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     // compute a value for the glow amount for this frame
-    float glow = fabs(sin(glfwGetTime() / 3.0f)) / 2.0f + 0.5f;
-
+    float glow = (sin(glfwGetTime()/3.0f) + 1.0f)/2.0f;
+    float scale = (sin(glfwGetTime()/3.0f)/4.0f) + 0.75f;
+    float scale2 = (sin(glfwGetTime()/3.0f)/20.0f) + 0.95f;  
+    float colorChange1 = (sin(glfwGetTime()/3.0) + 1.0f)/2.0f;
+    float colorChange2 = (sin(0.5*glfwGetTime()/3.0+2.0/3.0*3.14) + 1.0f)/2.0f;
+    float colorChange3 = (sin(glfwGetTime()/3.0+4.0/3.0*3.14) + 1.0f)/2.0f;
     // using our shader program...
     glUseProgram(shader);
 
     // ... set the uniform variables of the shader...
     // (in this case, simply set the value of the glow)
     glUniform1f(glGetUniformLocation(shader, "glow"), glow);
-
-    // ... then draw our triangles
+    glUniform1f(glGetUniformLocation(shader, "scale"), scale);
+    glUniform1f(glGetUniformLocation(shader, "scale2"), scale2);
+    glUniform3f(glGetUniformLocation(shader, "colorChange"), colorChange1, colorChange2, colorChange3);
     glBindVertexArray(vao);
     glDrawElements(GL_TRIANGLES, sizeof(indices) / sizeof(GLuint), GL_UNSIGNED_INT, 0);
 }
