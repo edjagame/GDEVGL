@@ -34,9 +34,9 @@ vertices += f"{0:7.4f}, {0:7.4f}, {constants}, {0.5:7.4f}, {0.5:7.4f}, //0\n"
 for i in range(r):
     vertices+=f"{pointX(i):7.4f}, {pointY(i):7.4f}, {constants}, {tex_coords('x', 1/3, i):7.4f}, {tex_coords('y', 1/3, i):7.4f}, //{i+1}\n"
     if i!=r-1:
-        indices +=f"{0},{i+1},{i+2},\n"
+        indices +=f"{0}, {i+1}, {i+2},\n"
     else:
-        indices +=f"{0},{r},1,\n"
+        indices +=f"{0}, {r}, 1,\n"
 
 index += 33
 

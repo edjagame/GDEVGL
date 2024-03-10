@@ -436,11 +436,18 @@ void render()
     float colorChange3 = (sin(glfwGetTime()/2.0+4.0/3.0*3.14) + 1.0f)/2.0f;
 
     float angle = 2.0*3.14*sin(glfwGetTime()/4);
+    float angleY = 0.05*3.14*sin(glfwGetTime()/4);
+
     glm::mat4 rotation = glm::mat4(cos(angle), -sin(angle),     0.0f, 0.0f,
                                    sin(angle),  cos(angle),     0.0f, 0.0f,
                                          0.0f,        0.0f,     1.0f, 0.0f,
                                          0.0f,        0.0f,     0.0f, 1.0f
     );
+
+    glm::mat4 rotationY = glm::mat4(cos(angleY),   sin(angleY), 0.0f, 0.0f,
+				0.0f,          1.0f,        0.0f, 0.0f,
+                                -sin(angleY),  cos(angleY), 0.0f, 0.0f,
+                                0.0f,          0.0f,        0.0f, 1.0f);
     
     // using our shader program...
     glUseProgram(shader);
@@ -454,6 +461,7 @@ void render()
     glUniform1f(glGetUniformLocation(shader, "moveY"), moveY);
     glUniform3f(glGetUniformLocation(shader, "colorChange"), colorChange1, colorChange2, colorChange3);
     glUniformMatrix4fv(glGetUniformLocation(shader, "rotation"), 1, GL_TRUE, &rotation[0][0]);
+    glUniformMatrix4fv(glGetUniformLocation(shader, "rotationY"), 1, GL_TRUE, &rotationY[0][0]);
     glBindVertexArray(vao);
     glDrawElements(GL_TRIANGLES, sizeof(indices) / sizeof(GLuint), GL_UNSIGNED_INT, 0);
 }

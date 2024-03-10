@@ -14,7 +14,7 @@ layout (location = 1) in vec3 vertexColor;
 
 uniform float glow, scale, scale2, moveX, moveY;
 uniform vec3 colorChange;
-uniform mat4 rotation;
+uniform mat4 rotation, rotationY;
 out vec3 shaderColor;
 
 void main()
@@ -59,6 +59,10 @@ void main()
         shaderColor.g = shaderColor.g * (colorChange.y/2 + 0.5);
         shaderColor.b = shaderColor.b * (colorChange.z/2 + 0.5);
     }
+
+    if(gl_VertexID >= 101 && gl_VertexID <= 163){
+        gl_Position = rotationY * gl_Position;
+    }   
     
     gl_Position.x = gl_Position.x + moveX;
     gl_Position.y = gl_Position.y + moveY;
