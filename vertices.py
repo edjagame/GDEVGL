@@ -18,25 +18,28 @@ def pointY(i) -> float:
 def scale(point) -> float:
     return (point + 0.75) * 2/3
 
-def tex_coords(axis: str, scale: float, i: int):
+def tex_coords(axis: str, scale: float, i: int) -> float:
     if axis == 'x':
         return math.cos(PI/(r/2.0)*i)/2.0*scale+0.5
     return math.sin(PI/(r/2.0)*i)/2.0*scale+0.5
 
+
+    
+         
 
 ################################ Ring 1 ################################
 
 vertices += "//Ring 1\n"
 indices += "//Ring 1\n"
 
-vertices += f"{0:7.4f}, {0:7.4f}, {constants}, {0.5:7.4f}, {0.5:7.4f}, //0\n"
+vertices += f"{0:7.4f}, {0:7.4f}, {constants}, {0.5:7.4f}, {0.5:7.4f}, {0:7.4f}, {0:7.4f}, //0\n"
 
 for i in range(r):
-    vertices+=f"{pointX(i):7.4f}, {pointY(i):7.4f}, {constants}, {tex_coords('x', 1/3, i):7.4f}, {tex_coords('y', 1/3, i):7.4f}, //{i+1}\n"
+    vertices+=f"{pointX(i):7.4f}, {pointY(i):7.4f}, {constants}, {tex_coords('x', 1/3, i):7.4f}, {tex_coords('y', 1/3, i):7.4f}, {pointX(i):7.4f}, {pointY(i):7.4f}, //{i+1}\n"
     if i!=r-1:
-        indices +=f"{0},{i+1},{i+2},\n"
+        indices +=f"{0}, {i+1}, {i+2},\n"
     else:
-        indices +=f"{0},{r},1,\n"
+        indices +=f"{0}, {r}, 1,\n"
 
 index += 33
 
@@ -48,11 +51,15 @@ indices += "\n//----------------Ring 2----------------//\n"
 
 vertices += "\n//1st Half Inner\n"
 for i in range(int(r/2)+1):
-    vertices+=f"{pointX(i):7.4f}, {pointY(i):7.4f}, {constants}, {tex_coords('x', 1/3, i):7.4f}, {tex_coords('y', 1/3, i):7.4f}, //{index+i}\n"
+    x = pointX(i)
+    y = pointY(i)
+    vertices+=f"{x:7.4f}, {y:7.4f}, {constants}, {tex_coords('x', 1/3, i):7.4f}, {tex_coords('y', 1/3, i):7.4f}, {x:7.4f}, {y+0.1:7.4f}, //{index+i}\n"
 
 vertices += "\n//1st Half Outer\n"
 for i in range(int(r/2)+1):
-    vertices+=f"{pointX(i)*2.0:7.4f}, {pointY(i)*2.0:7.4f}, {constants}, {tex_coords('x', 2/3, i):7.4f}, {tex_coords('y', 2/3, i):7.4f}, //{index+int(r/2)+1+i}\n"
+    x = pointX(i)*2.0
+    y = pointY(i)*2.0
+    vertices+=f"{x:7.4f}, {y:7.4f}, {constants}, {tex_coords('x', 2/3, i):7.4f}, {tex_coords('y', 2/3, i):7.4f}, {x:7.4f}, {y+0.1:7.4f}, //{index+int(r/2)+1+i}\n"
 
 indices += "\n//1st Half\n"
 for i in range(int(r/2)+1):
@@ -63,11 +70,15 @@ index += 34
 
 vertices += "\n//2nd Half Inner\n"
 for i in range(int(r/2)+1):
-    vertices+=f"{pointX(i+int(r/2)):7.4f}, {pointY(i+int(r/2)):7.4f}, {constants}, {tex_coords('x', 1/3, i+int(r/2)):7.4f}, {tex_coords('y', 1/3, i+int(r/2)):7.4f}, //{index+i}\n"
+    x = pointX(i+int(r/2))
+    y = pointY(i+int(r/2))
+    vertices+=f"{x:7.4f}, {y:7.4f}, {constants}, {tex_coords('x', 1/3, i+int(r/2)):7.4f}, {tex_coords('y', 1/3, i+int(r/2)):7.4f}, {x:7.4f}, {y-0.1:7.4f}, //{index+i}\n"
 
 vertices += "\n//2nd Half Outer\n"
 for i in range(int(r/2)+1):
-    vertices+=f"{pointX(i+int(r/2))*2.0:7.4f}, {pointY(i+int(r/2))*2.0:7.4f}, {constants}, {tex_coords('x', 2/3, i+int(r/2)):7.4f}, {tex_coords('y', 2/3, i+int(r/2)):7.4f}, //{index+int(r/2)+1+i}\n"
+    x = pointX(i+int(r/2))*2.0
+    y = pointY(i+int(r/2))*2.0
+    vertices+=f"{x:7.4f}, {y:7.4f}, {constants}, {tex_coords('x', 2/3, i+int(r/2)):7.4f}, {tex_coords('y', 2/3, i+int(r/2)):7.4f}, {x:7.4f}, {y-0.1:7.4f}, //{index+int(r/2)+1+i}\n"
 
 indices += "\n//2nd Half\n"
 for i in range(int(r/2)+1):
@@ -83,11 +94,15 @@ indices += "\n//----------------Ring 3----------------//\n"
 
 vertices += "\n//1st Half Inner\n"
 for i in range(int(r/2)+1):
-    vertices+=f"{pointX(i+int(r/4))*2.0:7.4f}, {pointY(i+int(r/4))*2.0:7.4f}, {constants}, {tex_coords('x', 2/3, i+int(r/4)):7.4f}, {tex_coords('y', 2/3, i+int(r/4)):7.4f}, //{index+i}\n"
+    x=pointX(i+int(r/4))*2.0
+    y=pointY(i+int(r/4))*2.0
+    vertices+=f"{x:7.4f}, {y:7.4f}, {constants}, {tex_coords('x', 2/3, i+int(r/4)):7.4f}, {tex_coords('y', 2/3, i+int(r/4)):7.4f}, {x-0.2:7.4f}, {y:7.4f}, //{index+i}\n"
 
 vertices += "\n//1st Half Outer\n"
 for i in range(int(r/2)+1):
-    vertices+=f"{pointX(i+int(r/4))*3.0:7.4f}, {pointY(i+int(r/4))*3.0:7.4f}, {constants}, {tex_coords('x', 1, i+int(r/4)):7.4f}, {tex_coords('y', 1, i+int(r/4)):7.4f}, //{index+int(r/2)+1+i}\n"
+    x=pointX(i+int(r/4))*3.0
+    y=pointY(i+int(r/4))*3.0
+    vertices+=f"{x:7.4f}, {y:7.4f}, {constants}, {tex_coords('x', 1, i+int(r/4)):7.4f}, {tex_coords('y', 1, i+int(r/4)):7.4f}, {x-0.2:7.4f}, {y:7.4f}, //{index+int(r/2)+1+i}\n"
 
 indices += "\n//1st Half\n"
 for i in range(int(r/2)+1):
@@ -98,15 +113,23 @@ index += 34
 
 vertices += "\n//2nd Half Inner\n"
 for i in range(int(r/4)):
-    vertices+=f"{pointX(i+int(3*r/4))*2.0:7.4f}, {pointY(i+int(3*r/4))*2.0:7.4f}, {constants}, {tex_coords('x', 2/3, i+int(3*r/4)):7.4f}, {tex_coords('y', 2/3, i+int(3*r/4)):7.4f}, //{index+i}\n"
+    x=pointX(i+int(3*r/4))*2.0
+    y=pointY(i+int(3*r/4))*2.0
+    vertices+=f"{x:7.4f}, {y:7.4f}, {constants}, {tex_coords('x', 2/3, i+int(3*r/4)):7.4f}, {tex_coords('y', 2/3, i+int(3*r/4)):7.4f}, {x+0.2:7.4f}, {y:7.4f}, //{index+i}\n"
 for i in range(int(r/4)+1):
-    vertices+=f"{pointX(i)*2.0:7.4f}, {pointY(i)*2.0:7.4f}, {constants}, {tex_coords('x', 2/3, i):7.4f}, {tex_coords('y', 2/3, i):7.4f}, //{index+int(r/4)+i}\n"
+    x=pointX(i)*2.0
+    y=pointY(i)*2.0
+    vertices+=f"{x:7.4f}, {y:7.4f}, {constants}, {tex_coords('x', 2/3, i):7.4f}, {tex_coords('y', 2/3, i):7.4f}, {x+0.2:7.4f}, {y:7.4f}, //{index+int(r/4)+i}\n"
 
 vertices += "\n//2nd Half Outer\n"
 for i in range(int(r/4)):
-    vertices+=f"{pointX(i+int(3*r/4))*3.0:7.4f}, {pointY(i+int(3*r/4))*3.0:7.4f}, {constants}, {tex_coords('x', 1, i+int(3*r/4)):7.4f}, {tex_coords('y', 1, i+int(3*r/4)):7.4f}, //{index+int(2*r/4)+i+1}\n"
+    x=pointX(i+int(3*r/4))*3.0
+    y=pointY(i+int(3*r/4))*3.0
+    vertices+=f"{x:7.4f}, {y:7.4f}, {constants}, {tex_coords('x', 1, i+int(3*r/4)):7.4f}, {tex_coords('y', 1, i+int(3*r/4)):7.4f}, {x+0.2:7.4f}, {y:7.4f}, //{index+int(2*r/4)+i+1}\n"
 for i in range(int(r/4)+1):
-    vertices+=f"{pointX(i)*3.0:7.4f}, {pointY(i)*3.0:7.4f}, {constants}, {tex_coords('x', 1, i):7.4f}, {tex_coords('y', 1, i):7.4f}, //{index+int(3*r/4)+i+1}\n"
+    x=pointX(i)*3.0
+    y=pointY(i)*3.0
+    vertices+=f"{x:7.4f}, {y:7.4f}, {constants}, {tex_coords('x', 1, i):7.4f}, {tex_coords('y', 1, i):7.4f}, {x+0.2:7.4f}, {y:7.4f}, //{index+int(3*r/4)+i+1}\n"
 
 indices += "\n//1st Half\n"
 for i in range(int(r/2)+1):
@@ -121,13 +144,17 @@ vertices += "\n//----------------Corner----------------//\n"
 indices += "\n//----------------Corner----------------//\n"
 
 for i in range(r):
-    vertices+=f"{pointX(i)*3.0:7.4f}, {pointY(i)*3.0:7.4f}, {constants}, {math.cos(PI/(r/2.0)*i)/2.0+0.5:7.4f}, {math.sin(PI/(r/2)*i)/2.0+0.5:7.4f}, //{index+i}\n"
+    x = pointX(i)*3.0
+    y = pointY(i)*3.0
+    dispX = 0.3 if x > 0 else -0.3
+    dispY = 0.3 if y > 0 else -0.3
+    vertices+=f"{x:7.4f}, {y:7.4f}, {constants}, {math.cos(PI/(r/2.0)*i)/2.0+0.5:7.4f}, {math.sin(PI/(r/2)*i)/2.0+0.5:7.4f}, {x+dispX:7.4f}, {y+dispY:7.4f}, //{index+i}\n"
 
 
-vertices+=f"{0.75:7.4f}, {0.75:7.4f}, {constants}, {1:7.4f}, {1:7.4f}, //{index+r}\n"
-vertices+=f"{-0.75:7.4f}, {0.75:7.4f}, {constants}, {0:7.4f}, {1:7.4f}, //{index+r+1}\n"
-vertices+=f"{-0.75:7.4f}, {-0.75:7.4f}, {constants}, {0:7.4f}, {0:7.4f}, //{index+r+2}\n"
-vertices+=f"{0.75:7.4f}, {-0.75:7.4f}, {constants}, {1:7.4f}, {0:7.4f}, //{index+r+3}\n"
+vertices+=f"{0.75:7.4f}, {0.75:7.4f}, {constants}, {1:7.4f}, {1:7.4f}, {1+0.3:7.4f}, {1+0.3:7.4f}, //{index+r}\n"
+vertices+=f"{-0.75:7.4f}, {0.75:7.4f}, {constants}, {0:7.4f}, {1:7.4f}, {-1-0.3:7.4f}, {1+0.3:7.4f}, //{index+r+1}\n"
+vertices+=f"{-0.75:7.4f}, {-0.75:7.4f}, {constants}, {0:7.4f}, {0:7.4f}, {-1-0.3:7.4f}, {-1-0.3:7.4f}, //{index+r+2}\n"
+vertices+=f"{0.75:7.4f}, {-0.75:7.4f}, {constants}, {1:7.4f}, {0:7.4f}, {1+0.3:7.4f}, {-1-0.3:7.4f}, //{index+r+3}\n"
 
 
 for i in range(int(r/4)):
