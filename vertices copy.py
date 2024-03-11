@@ -143,32 +143,48 @@ index += 34
 vertices += "\n//----------------Corner----------------//\n"
 indices += "\n//----------------Corner----------------//\n"
 
+extra = 0
 for i in range(r):
+    
     x = pointX(i)*3.0
     y = pointY(i)*3.0
     dispX = 0.3 if x > 0 else -0.3
     dispY = 0.3 if y > 0 else -0.3
-    vertices+=f"{x:7.4f}, {y:7.4f}, {constants}, {math.cos(PI/(r/2.0)*i)/2.0+0.5:7.4f}, {math.sin(PI/(r/2)*i)/2.0+0.5:7.4f}, {x+dispX:7.4f}, {y+dispY:7.4f}, //{index+i}\n"
+    
+    if i%8==0:
+        vertices+=f"{x:7.4f}, {y:7.4f}, {constants}, {math.cos(PI/(r/2.0)*i)/2.0+0.5:7.4f}, {math.sin(PI/(r/2)*i)/2.0+0.5:7.4f}, {x+dispX:7.4f}, {y+dispY:7.4f}, //{index+i+extra}\n"
+        extra += 1
+
+    if i==0:
+        dispY = -dispY
+    if i==8:
+        dispX = -dispX
+    if i==16:
+        dispY = -dispY
+    if i==24:
+        dispX = -dispX
+        
+    vertices+=f"{x:7.4f}, {y:7.4f}, {constants}, {math.cos(PI/(r/2.0)*i)/2.0+0.5:7.4f}, {math.sin(PI/(r/2)*i)/2.0+0.5:7.4f}, {x+dispX:7.4f}, {y+dispY:7.4f}, //{index+i+extra}\n"
 
 
-vertices+=f"{0.75:7.4f}, {0.75:7.4f}, {constants}, {1:7.4f}, {1:7.4f}, {1+0.3:7.4f}, {1+0.3:7.4f}, //{index+r}\n"
-vertices+=f"{-0.75:7.4f}, {0.75:7.4f}, {constants}, {0:7.4f}, {1:7.4f}, {-1-0.3:7.4f}, {1+0.3:7.4f}, //{index+r+1}\n"
-vertices+=f"{-0.75:7.4f}, {-0.75:7.4f}, {constants}, {0:7.4f}, {0:7.4f}, {-1-0.3:7.4f}, {-1-0.3:7.4f}, //{index+r+2}\n"
-vertices+=f"{0.75:7.4f}, {-0.75:7.4f}, {constants}, {1:7.4f}, {0:7.4f}, {1+0.3:7.4f}, {-1-0.3:7.4f}, //{index+r+3}\n"
+vertices+=f"{0.75:7.4f}, {0.75:7.4f}, {constants}, {1:7.4f}, {1:7.4f}, {0.75+0.3:7.4f}, {0.75+0.3:7.4f}, //{index+r+4}\n"
+vertices+=f"{-0.75:7.4f}, {0.75:7.4f}, {constants}, {0:7.4f}, {1:7.4f}, {-0.75-0.3:7.4f}, {0.75+0.3:7.4f}, //{index+r+5}\n"
+vertices+=f"{-0.75:7.4f}, {-0.75:7.4f}, {constants}, {0:7.4f}, {0:7.4f}, {-0.75-0.3:7.4f}, {-0.75-0.3:7.4f}, //{index+r+6}\n"
+vertices+=f"{0.75:7.4f}, {-0.75:7.4f}, {constants}, {1:7.4f}, {0:7.4f}, {0.75+0.3:7.4f}, {-0.75-0.3:7.4f}, //{index+r+7}\n"
 
 
 for i in range(int(r/4)):
-    indices += f"{index+r},{index+i},{index+i+1},\n"
+    indices += f"{index+r+4},{index+i+1},{index+i+2},\n"
 
 for i in range(int(r/4)):
-    indices += f"{index+r+1},{index+i+int((r/4))},{index+i+1+int((r/4))},\n"
+    indices += f"{index+r+5},{index+i+int((r/4))+2},{index+i+3+int((r/4))},\n"
 
 for i in range(int(r/4)):
-    indices += f"{index+r+2},{index+i+int(2*r/4)},{index+i+1+int(2*r/4)},\n"
+    indices += f"{index+r+6},{index+i+int(2*r/4)+3},{index+i+4+int(2*r/4)},\n"
 
 for i in range(int(r/4)-1):
-    indices += f"{index+r+3},{index+i+int(3*r/4)},{index+i+1+int(3*r/4)},\n"
-indices += f"{index+r+3},{index+int(r/4)-1-1+1+int(3*r/4)},{index},\n"
+    indices += f"{index+r+7},{index+i+int(3*r/4)+4},{index+i+5+int(3*r/4)},\n"
+indices += f"{index+r+7},{index+int(r/4)-1-1+1+int(3*r/4)+4},{index},\n"
 
 
 ################################ Write ################################
