@@ -10,30 +10,22 @@
  *****************************************************************************/
 
 #version 330 core
+
 in vec3 shaderColor;
 in vec2 shaderTexCoord;
-flat in int shaderTexture;
-uniform sampler2D marbleTexture, glassTexture, noiseTexture;
-uniform float time;
 out vec4 fragmentColor;
+uniform sampler2D keqing, effect;
+uniform float time, loopEnd;
 
 void main()
-{
-    vec4 color = vec4(shaderColor, 1.0f);
-    vec4 noise = texture(noiseTexture, shaderTexCoord + time/2.0);
-
-    if(shaderTexture == 0){
-        color *= texture(marbleTexture, shaderTexCoord) * vec4((sin(time)+1.0)/2.0,(sin(time+6.28/3.0)+1.0)/2.0,(sin(time+12.57/3.0)+1.0)/2.0,1.0f);
+{   
+    vec4 textureB = texture(effect, shaderTexCoord + time/2.0);
+    vec4 textureA = texture(keqing, shaderTexCoord);
+    if (time>=3.0 && time <=6.0){
+        textureA = texture(keqing, mix(shaderTexCoord.xy, shaderTexCoord + (textureB.xy - 0.5) * 0.1, sin((time-3.0)*3.14/3.0)));
     }
-
-    else{
-        color *= texture(glassTexture, mix(shaderTexCoord.xy, shaderTexCoord + (noise.xy - 0.5) * 0.5, time));
-    }
-
-    fragmentColor = color;
-
     
 
-    // fragmentColor = vec4(shaderColor, 1.0f) *
-    //                 textureA;
+    fragmentColor = vec4(shaderColor, 1.0f) *
+                    textureA;
 }

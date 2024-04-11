@@ -421,6 +421,7 @@ void render()
     // clear the whole frame
     glClearColor(0.0f, 0.3f, 0.3f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glEnable(GL_CULL_FACE); 
 
     // compute a value for the glow amount for this frame
     float moveX = cos(glfwGetTime()/4)/10;
