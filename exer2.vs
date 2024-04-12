@@ -15,7 +15,7 @@ layout (location = 3) in int vertexTexture;
 
 out vec3 shaderColor;
 out vec2 shaderTexCoord;
-out int shaderTexture;
+flat out int shaderTexture;
 
 uniform mat4 matrix;
 

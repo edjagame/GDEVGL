@@ -32,8 +32,6 @@ void main()
 
     fragmentColor = color;
 
-    
-
     // fragmentColor = vec4(shaderColor, 1.0f) *
     //                 textureA;
 }

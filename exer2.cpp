@@ -260,18 +260,30 @@ void render()
     glUniform1f(glGetUniformLocation(shader, "time"), glfwGetTime());
 
     glEnable(GL_DEPTH_TEST); // enable OpenGL's hidden surface removal
+
+    glm::vec3 eyePosition = glm::vec3(4.0f, 2.0f, 0.0f);
+    glm::vec3 targetPosition = glm::vec3(0.0f, 0.0f, 0.0f);
+    glm::vec3 upVector = glm::vec3(0.0f, 1.0f, 0.0f);
+    glm::mat4 viewTransform;
+    viewTransform = glm::lookAt(eyePosition, targetPosition, upVector);
+
     glm::mat4 matrix;
+    glm::mat4 amog1;
+    glm::mat4 amog2;
+    glm::mat4 amog3;
+
     matrix = glm::perspective(glm::radians(60.0f),
                               (float) WINDOW_WIDTH / WINDOW_HEIGHT,
                               0.1f,
                               100.0f);
-    matrix = glm::translate(matrix, glm::vec3(0.0f, 0.0f, -3.0f));
+    
     float angle = glfwGetTime()*60;
-    matrix = glm::rotate(matrix, glm::radians(angle),
-                                 glm::vec3(1.0f, 1.0f, 0.0f));
-    //matrix = glm::scale(matrix, glm::vec3(5.0f, 5.0f, 1.0f));
-    glUniformMatrix4fv(glGetUniformLocation(shader, "matrix"),
-                       1, GL_FALSE, glm::value_ptr(matrix));
+    amog1 = glm::translate(matrix, glm::vec3(0.0f, 0.0f, -3.0f));
+    amog1 = glm::rotate(amog1, glm::radians(angle), glm::vec3(1.0f, 0.0f, 0.0f));
+    amog1 = glm::scale(amog1, glm::vec3(0.2f, 0.2f, 0.2f));
+    amog1 = amog1 * viewTransform;
+    
+    glUniformMatrix4fv(glGetUniformLocation(shader, "matrix"), 1, GL_FALSE, glm::value_ptr(amog1));
 
     glBindVertexArray(vao);
 
@@ -290,6 +302,24 @@ void render()
     glUniform1i(glGetUniformLocation(shader, "noiseTexture"), 2);
 
     glDrawElements(GL_TRIANGLES, sizeof(indices) / sizeof(GLuint), GL_UNSIGNED_INT, 0);
+
+    float angle2 = glfwGetTime()*120;
+    amog2 = glm::translate(matrix, glm::vec3(-1.0f, 0.0f, -2.0f));
+    amog2 = glm::rotate(amog2, glm::radians(angle2), glm::vec3(0.0f, 0.0f, 1.0f));
+    amog2 = glm::scale(amog2, glm::vec3(1.0f, 1.0f, 1.0f));
+    amog2 = amog2 * viewTransform;
+
+    glUniformMatrix4fv(glGetUniformLocation(shader, "matrix"), 1, GL_FALSE, glm::value_ptr(amog2));
+    glDrawElements(GL_TRIANGLES, sizeof(indices) / sizeof(GLuint), GL_UNSIGNED_INT, 0);
+
+    float angle3 = glfwGetTime()*45;
+    amog3 = glm::translate(matrix, glm::vec3(1.0f, 1.0f,-6.0f));
+    amog3 = glm::rotate(amog3, glm::radians(-angle3), glm::vec3(0.1f, 1.0f, 0.0f));
+    amog3 = glm::scale(amog3, glm::vec3(3.0f, 3.0f, 3.0f));
+    amog3 = amog3 * viewTransform;
+
+    glUniformMatrix4fv(glGetUniformLocation(shader, "matrix"), 1, GL_FALSE, glm::value_ptr(amog3));
+    glDrawElements(GL_TRIANGLES, sizeof(indices) / sizeof(GLuint), GL_UNSIGNED_INT, 0);
 }
 
 /*****************************************************************************/
@@ -300,6 +330,9 @@ void handleKeys(GLFWwindow* pWindow, int key, int scancode, int action, int mode
     // pressing Esc closes the window
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
         glfwSetWindowShouldClose(pWindow, GL_TRUE);
+
+    // if (key == GLFW_KEY_W && action == GLFW_PRESS)
+    //     ;
 }
 
 // handler called by GLFW when the window is resized
