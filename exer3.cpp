@@ -256,7 +256,9 @@ void render()
     glUniform1i(glGetUniformLocation(shader, "glassTexture"), 1);
     glUniform1i(glGetUniformLocation(shader, "noiseTexture"), 2);
 
-    glm::mat4 matrix;
+    glm::mat4 model;
+    glm::mat4 projView;
+    glm::mat4 normal;
 
     float angle = glfwGetTime()*60;
     glm::vec3 axes[] = {
@@ -275,21 +277,21 @@ void render()
 
     for(unsigned int i = 0; i < 3; i++) {
 
-        matrix = glm::perspective(glm::radians(60.0f),
+        projView = glm::perspective(glm::radians(60.0f),
                                   (float) WINDOW_WIDTH / WINDOW_HEIGHT,
                                   0.1f,
                                   100.0f);
 
-        matrix = matrix * viewTransform;
-
-        matrix = glm::translate(matrix, amogusPositions[i]);
-        matrix = glm::rotate(matrix, glm::radians(angle), axes[i]);
-        matrix = glm::scale(matrix, scales[i]);
+        projView = projView * viewTransform;
+    
+        model = glm::translate(glm::mat4(1.0), amogusPositions[i]);
+        model = glm::rotate(model, glm::radians(angle), axes[i]);
+        model = glm::scale(model, scales[i]);
         
 
         
-
-        glUniformMatrix4fv(glGetUniformLocation(shader, "matrix"), 1, GL_FALSE, glm::value_ptr(matrix));
+        glUniformMatrix4fv(glGetUniformLocation(shader, "model"), 1, GL_FALSE, glm::value_ptr(model));
+        glUniformMatrix4fv(glGetUniformLocation(shader, "projView"), 1, GL_FALSE, glm::value_ptr(projView));
         glDrawElements(GL_TRIANGLES, sizeof(indices) / sizeof(GLuint), GL_UNSIGNED_INT, 0);
 
     }

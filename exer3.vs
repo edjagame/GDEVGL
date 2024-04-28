@@ -17,11 +17,11 @@ out vec3 shaderColor;
 out vec2 shaderTexCoord;
 flat out int shaderTexture;
 
-uniform mat4 matrix;
+uniform mat4 projView, model;
 
 void main()
 {
-    gl_Position = matrix * vec4(vertexPosition, 1.0f);
+    gl_Position = projView * model * vec4(vertexPosition, 1.0f);
     shaderColor = vertexColor;
     shaderTexCoord = vertexTexCoord;
     shaderTexture = vertexTexture;
