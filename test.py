@@ -41,13 +41,13 @@ with open("vertices3.txt", "w") as vertexFile:
     for triangleNum, triangle in enumerate(indices):
         vertexFile.write(f"//Triangle #{triangleNum}\n")
 
-        # #specific to amogus
-        # if triangleNum <= 43:
-        #     rgb = ["1.00", "0.00", "0.00"]
-        # if triangleNum >= 44 and triangleNum <= 55:
-        #     rgb = ["0.70", "0.20", "0.20"]
-        # else:
-        #     rgb = ["0.00", "1.00", "1.00"]
+        #specific to amogus
+        if triangleNum <= 43:
+            rgb = ["1.00", "0.50", "0.50"]
+        elif triangleNum >= 44 and triangleNum <= 55:
+            rgb = ["0.70", "0.30", "0.30"]
+        else:
+            rgb = ["0.50", "1.00", "1.00"]
 
         for t in triangle:
             pos = vertices[t.pos]
@@ -72,12 +72,12 @@ with open("vertices3.txt", "w") as vertexFile:
             vertexFile.write(f"\t")
 
 
-            # #specific to amogus
-            # if triangleNum >= 56:
-            #     vertexFile.write(f"1,\t")
-            # else:
-            #     vertexFile.write(f"0,\t")
+            #specific to amogus
+            if triangleNum >= 56:
+                vertexFile.write(f"1,\t")
+            else:
+                vertexFile.write(f"0,\t")
 
-            
+
             vertexFile.write(f"\n")
         vertexFile.write(f"\n")

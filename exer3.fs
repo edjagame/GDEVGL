@@ -10,28 +10,32 @@
  *****************************************************************************/
 
 #version 330 core
-in vec3 shaderColor;
+in vec3 worldSpaceNormal, worldSpacePosition;
+in vec3 objectColor;
 in vec2 shaderTexCoord;
-flat in int shaderTexture;
+flat in int shaderTextureID;
+
 uniform sampler2D marbleTexture, glassTexture, noiseTexture;
 uniform float time;
+uniform vec3 lightPos, lightColor;
+
 out vec4 fragmentColor;
 
 void main()
 {
-    vec4 color = vec4(shaderColor, 1.0f);
     vec4 noise = texture(noiseTexture, shaderTexCoord + time/2.0);
+    vec4 marble = texture(marbleTexture, shaderTexCoord);
+    vec4 glass = texture(glassTexture, mix(shaderTexCoord.xy, shaderTexCoord + (noise.xy - 0.5) * 0.5, time));
 
-    if(shaderTexture == 0){
-        color *= texture(marbleTexture, shaderTexCoord) * vec4((sin(time)+1.0)/2.0,(sin(time+6.28/3.0)+1.0)/2.0,(sin(time+12.57/3.0)+1.0)/2.0,1.0f);
-    }
+    vec3 lightVector = normalize(lightPos - worldSpacePosition);
+    vec3 ambientLight = vec3(0.3f);
+    vec3 diffuseLight = max(dot(normalize(worldSpaceNormal),lightVector), 0.0f) * lightColor;
+    vec3 lighting = ambientLight + diffuseLight;
+    
+    vec4 color = vec4(lighting * objectColor, 1.0f);
 
-    else{
-        color *= texture(glassTexture, mix(shaderTexCoord.xy, shaderTexCoord + (noise.xy - 0.5) * 0.5, time));
-    }
+    if (shaderTextureID == 0) color *= marble;
+    else color *= glass;
 
     fragmentColor = color;
-
-    // fragmentColor = vec4(shaderColor, 1.0f) *
-    //                 textureA;
 }

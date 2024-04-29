@@ -12,18 +12,25 @@ layout (location = 0) in vec3 vertexPosition;
 layout (location = 1) in vec3 vertexColor;
 layout (location = 2) in vec3 vertexNormal;
 layout (location = 3) in vec2 vertexTexCoord;
-layout (location = 4) in int vertexTexture;
+layout (location = 4) in int vertexTextureID;
 
-out vec3 shaderColor;
+out vec3 worldSpaceNormal, worldSpacePosition;
+out vec3 objectColor;
 out vec2 shaderTexCoord;
-flat out int shaderTexture;
+flat out int shaderTextureID;
 
 uniform mat4 projView, model, normal;
+uniform vec3 lightPos;
 
 void main()
 {
-    gl_Position = projView * model * vec4(vertexPosition, 1.0f);
-    shaderColor = vertexColor;
+
+    worldSpacePosition = (model * vec4(vertexPosition, 1.0f)).xyz;
+    worldSpaceNormal = (normal * vec4(vertexNormal, 1.0f)).xyz;
+    gl_Position = projView * vec4(worldSpacePosition, 1.0f);
+
+    objectColor = vertexColor;
     shaderTexCoord = vertexTexCoord;
-    shaderTexture = vertexTexture;
+    shaderTextureID = vertexTextureID;
+    
 }
