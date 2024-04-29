@@ -1,49 +1,83 @@
-string = ""
-with open("verticesNew.txt", "r") as file:
-    index = 0
-    for line in file:
-        string += f"{line[:-1]} -> {str(index)}\n"
-        index+=1
+class FaceIndex:
+    def __init__(self, pos: int, tex: int, norm: int):
+        self.pos = pos 
+        self.tex = tex
+        self.norm = norm
 
-with open("verticesNew.txt", "w") as file:
-    file.write(string)
+vertices = []
+normals = []
+tex_coords = []
+indices = []
+with open('amogus.obj', 'r') as obj_file:
+    for line in obj_file:
+        if line.startswith('v '):
+            vertex = [float(i)/3 for i in line.strip().split()[1:]]
+            vertices.append(vertex)
+        
+        if line.startswith('vn '):
+            normal = [float(i) for i in line.strip().split()[1:]]
+            normals.append(normal)
+
+        if line.startswith('vt '):
+            tex_coord = [float(i) for i in line.strip().split()[1:]]
+            tex_coords.append(tex_coord)
+            
+        elif line.startswith('f '):
+            triangle = []
+            for x in line.split()[1:]:
+                facePos = int(x.split('/')[0]) - 1 
+                faceTex = int(x.split('/')[1]) - 1 
+                faceNorm = int(x.split('/')[2]) - 1 
+                triangle.append(FaceIndex(facePos, faceTex, faceNorm))
+            indices.append(triangle)
+
+file_path = 'amogus.obj'  # Replace 'your_file_path.obj' with the path to your .obj file
+rgb = ["1.00", "1.00", "1.00"]
+format = "f,\t"
+
+with open("vertices3.txt", "w") as vertexFile:
+    #indices[] contains N Triangles
+    #Each Triangle has 3 FaceIndex Objects (indices[0]: FaceIndex, indices[1], indices[2])
+    for triangleNum, triangle in enumerate(indices):
+        vertexFile.write(f"//Triangle #{triangleNum}\n")
+
+        # #specific to amogus
+        # if triangleNum <= 43:
+        #     rgb = ["1.00", "0.00", "0.00"]
+        # if triangleNum >= 44 and triangleNum <= 55:
+        #     rgb = ["0.70", "0.20", "0.20"]
+        # else:
+        #     rgb = ["0.00", "1.00", "1.00"]
+
+        for t in triangle:
+            pos = vertices[t.pos]
+            norm = normals[t.norm]
+            tex = tex_coords[t.tex]
+            
+            #x, y, z
+            for i in pos:
+                vertexFile.write(f"{i:.6f}" + format)
+            vertexFile.write("\t")
+
+            vertexFile.write(rgb[0] + format)
+            vertexFile.write(rgb[1] + format)
+            vertexFile.write(rgb[2] + format+ "\t")
+
+            for i in norm:
+                vertexFile.write(f"{i:.6f}" + format)
+            vertexFile.write(f"\t")
+
+            for i in tex:
+                vertexFile.write(f"{i:.6f}" + format)
+            vertexFile.write(f"\t")
 
 
-# def read_numbers_from_file(filename):
-#     numbers = []
-#     with open(filename, 'r') as file:
-#         for line in file:
-#             line = line.strip()
-#             if line and not line.startswith('/'):
-#                 numbers.extend(map(int, line.rstrip(',').split(',')))
-#     return numbers
+            # #specific to amogus
+            # if triangleNum >= 56:
+            #     vertexFile.write(f"1,\t")
+            # else:
+            #     vertexFile.write(f"0,\t")
 
-# def get_unique_sorted_numbers(numbers):
-#     unique_numbers = list(set(numbers))
-#     unique_numbers.sort()
-#     return unique_numbers
-
-# def find_missing_integers(sorted_list):
-#     if not sorted_list:
-#         return []
-
-#     min_val = sorted_list[0]
-#     max_val = sorted_list[-1]
-#     missing_integers = []
-
-#     for num in range(min_val + 1, max_val):
-#         if num not in sorted_list:
-#             missing_integers.append(num)
-
-#     return missing_integers
-
-# def main():
-#     filename = "indices.txt"
-#     numbers = read_numbers_from_file(filename)
-#     unique_sorted_numbers = get_unique_sorted_numbers(numbers)
-#     print("Sorted list of unique numbers in the file:", unique_sorted_numbers)
-#     missing_integers = find_missing_integers(unique_sorted_numbers)
-#     print(missing_integers)
-# if __name__ == "__main__":
-#     main()
-
+            
+            vertexFile.write(f"\n")
+        vertexFile.write(f"\n")

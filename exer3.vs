@@ -10,14 +10,15 @@
 
 layout (location = 0) in vec3 vertexPosition;
 layout (location = 1) in vec3 vertexColor;
-layout (location = 2) in vec2 vertexTexCoord;
-layout (location = 3) in int vertexTexture;
+layout (location = 2) in vec3 vertexNormal;
+layout (location = 3) in vec2 vertexTexCoord;
+layout (location = 4) in int vertexTexture;
 
 out vec3 shaderColor;
 out vec2 shaderTexCoord;
 flat out int shaderTexture;
 
-uniform mat4 projView, model;
+uniform mat4 projView, model, normal;
 
 void main()
 {
