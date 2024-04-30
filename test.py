@@ -73,10 +73,12 @@ with open("vertices3.txt", "w") as vertexFile:
 
 
             #specific to amogus
-            if triangleNum >= 56:
+            if triangleNum <= 43:
+                vertexFile.write(f"0,\t")
+            elif triangleNum >= 44 and triangleNum <= 55:
                 vertexFile.write(f"1,\t")
             else:
-                vertexFile.write(f"0,\t")
+                vertexFile.write(f"2,\t")
 
 
             vertexFile.write(f"\n")

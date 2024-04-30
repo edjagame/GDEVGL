@@ -450,7 +450,8 @@ void render()
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, marbleTexture);
 
-    glUniform1f(glGetUniformLocation(shader, "time"), glfwGetTime());
+    float time = glfwGetTime();
+    glUniform1f(glGetUniformLocation(shader, "time"), time);
 
     glEnable(GL_DEPTH_TEST); // enable OpenGL's hidden surface removal
 
@@ -474,7 +475,7 @@ void render()
     glm::mat4 projView;
     glm::mat4 normal;
 
-    float angle = glfwGetTime()*60;
+    float angle = 60;//glfwGetTime()*60;
     glm::vec3 axes[] = {
         glm::vec3(1.0f, 0.0f, 0.0f),
         glm::vec3(0.0f, 1.0f, 0.0f),
@@ -510,11 +511,12 @@ void render()
         glDrawArrays(GL_TRIANGLES, 0, sizeof(vertices) / (3 * sizeof(float)));
     }
     
-    glm::vec3 lightPos = glm::vec3(2.0f,2.0f,0.0f);
-    glm::vec3 lightColor = glm::vec3(1.0f,1.0f,1.0f);
+    glm::vec3 lightPos = glm::vec3(2.0 * cos(time),2.0f,2.0 * sin(time));
+    glm::vec3 lightColor = glm::vec3((sin(time)+1.0)/2.0*0.8,(sin(time+6.28/3.0)+1.0)/2.0*0.8,(sin(time+12.57/3.0)+1.0)/2.0*0.8);
     
     glUniform3fv(glGetUniformLocation(shader, "lightPos"), 1, glm::value_ptr(lightPos));
     glUniform3fv(glGetUniformLocation(shader, "lightColor"), 1, glm::value_ptr(lightColor));
+    glUniform3fv(glGetUniformLocation(shader, "eyePosition"), 1, glm::value_ptr(eyePosition));
 }
 
 /*****************************************************************************/
