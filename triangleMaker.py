@@ -10,8 +10,10 @@ vertices = []
 normals = []
 tex_coords = []
 indices = []
+inputFile = "water.obj"
+outputFile = "waterVerts.txt"
 
-with open('swimmingPool.obj', 'r') as obj_file:
+with open(inputFile, 'r') as obj_file:
     for line in obj_file:
         if line.startswith('v '):
             vertex = [float(i) for i in line.strip().split()[1:]]
@@ -58,12 +60,11 @@ for k,v in vertex_smooth.items():
             y += vec[1]
             z += vec[2]
         smooth_normal[k] = [x/length, y/length, z/length]
-
-rgb = ["0.8", "0.6", "0.9"]
+rgba = ["0.8", "0.9", "0.9", "0.5"]
 format = "f,\t"
 numTriangles = len(indices) -1
 
-with open("poolVerts.txt", "w") as vertexFile:
+with open(outputFile, "w") as vertexFile:
     #indices[] contains N Triangles
     #Each Triangle has 3 FaceIndex Objects (indices[0]: FaceIndex, indices[1], indices[2])
     for triangleNum, triangle in enumerate(indices):
@@ -72,12 +73,7 @@ with open("poolVerts.txt", "w") as vertexFile:
         for t in triangle:
 
             pos = vertices[t.pos]
-                
-            if t.pos in smooth_normal:
-                norm = smooth_normal[t.pos]
-            else:
-                norm = normals[t.norm]
-                
+            norm = normals[t.norm]
             tex = tex_coords[t.tex]
             
             #x, y, z
@@ -85,10 +81,12 @@ with open("poolVerts.txt", "w") as vertexFile:
                 vertexFile.write(f"{i:.6f}" + format)
             vertexFile.write("\t")
 
-            #RGB
-            vertexFile.write(rgb[0] + format)
-            vertexFile.write(rgb[1] + format)
-            vertexFile.write(rgb[2] + format+ "\t")
+            #RGBa
+            vertexFile.write(rgba[0] + format)
+            vertexFile.write(rgba[1] + format)
+            vertexFile.write(rgba[2] + format)
+            vertexFile.write(rgba[3] + format+ "\t")
+
 
             #vertex normal coords
             for i in norm:
@@ -100,10 +98,7 @@ with open("poolVerts.txt", "w") as vertexFile:
                 vertexFile.write(f"{i:.6f}" + format)
             vertexFile.write(f"\t")
 
-
-            #Texture ID
-            vertexFile.write(f"0,\t")
-
+            #end of file
             vertexFile.write(f"\n")
         vertexFile.write(f"\n")
 

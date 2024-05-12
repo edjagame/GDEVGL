@@ -11,11 +11,10 @@
 
 #version 330 core
 in vec3 worldSpaceNormal, worldSpacePosition;
-in vec3 objectColor;
+in vec4 objectColor;
 in vec2 shaderTexCoord;
-flat in int shaderTextureID;
 
-uniform sampler2D marbleTexture, glassTexture, noiseTexture;
+uniform sampler2D tileTexture;
 uniform float time;
 uniform vec3 lightPos, lightColor, eyePosition;
 
@@ -23,24 +22,21 @@ out vec4 fragmentColor;
 
 void main()
 {
-    vec4 marble = texture(marbleTexture, shaderTexCoord);
-    vec4 glass = texture(glassTexture, shaderTexCoord + time/10.0);
+    vec4 tiles = texture(tileTexture, shaderTexCoord);
 
     vec3 surfaceToLight = normalize(lightPos - worldSpacePosition);
-    vec3 ambientLight = vec3(0.3f);
+    vec3 ambientLight = vec3(0.2f);
     vec3 diffuseLight = max(dot(normalize(worldSpaceNormal),surfaceToLight), 0.0f) * lightColor;
     
-    float specularStrength = 0.5;
+    float specularStrength = 0.25;
     vec3 surfaceToEye = normalize(worldSpacePosition - eyePosition);
     vec3 reflectDir = surfaceToLight - 2 * dot(worldSpaceNormal, surfaceToLight) * worldSpaceNormal;
     float spec = pow(max(dot(surfaceToEye, reflectDir), 0.0), 16);
     vec3 specularLight = specularStrength * spec * lightColor;
 
     vec3 lighting = ambientLight + diffuseLight + specularLight;
-    vec4 color = vec4(lighting * objectColor, 1.0f);
+    vec4 color = vec4(lighting, 1.0f) * objectColor;
 
-    if (shaderTextureID == 0) color *= marble;
-    else color *= glass;
 
-    fragmentColor = color;
+    fragmentColor = color * tiles;
 }
