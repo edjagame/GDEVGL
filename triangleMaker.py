@@ -98,6 +98,10 @@ with open(outputFile, "w") as vertexFile:
                 vertexFile.write(f"{i:.6f}" + format)
             vertexFile.write(f"\t")
 
+            #tex coords
+            vertexFile.write(f"1,")
+            vertexFile.write(f"\t")
+
             #end of file
             vertexFile.write(f"\n")
         vertexFile.write(f"\n")
