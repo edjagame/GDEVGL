@@ -45717,16 +45717,16 @@ void render()
     float angle[] = {60.0, 180.0, 300.0};
 
     glm::vec3 scales[] = {
-        glm::vec3(0.4f, 0.4f, 0.4f),
-        glm::vec3(0.3f, 0.3f, 0.3f),
-        glm::vec3(0.5f, 0.5f, 0.5f),
+        glm::vec3(0.6f, 0.6f, 0.6f),
+        glm::vec3(0.7f, 0.7f, 0.7f),
+        glm::vec3(0.8f, 0.8f, 0.8f),
     };
 
     
     glm::vec3 duckPositions[] = {
-        glm::vec3(  0.0, sin(time)/10.0-0.3,  1.0), 
-        glm::vec3( -2.0, sin(time+2)/10.0-0.3, -1.0), 
-        glm::vec3(  2.0, sin(time+4)/10.0-0.3, -1.0),  
+        glm::vec3(  sin(time+4)/10.0-0.0, sin(time)/21.0-0.3,  cos(time)/10.0-1.0), 
+        glm::vec3( sin(time+2)/10.0-1.6, sin(time+2)/21.0-0.3, cos(time+2)/10.0+1.0), 
+        glm::vec3(  sin(time+2)/10.0+1.6, sin(time+4)/21.0-0.3, cos(time+4)/10.0+1.0),  
     };
 
     glm::mat4 viewTransform = glm::lookAt(eyePosition, targetPosition + eyePosition, upVector);
