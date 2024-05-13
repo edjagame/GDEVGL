@@ -20,6 +20,7 @@ out vec2 shaderTexCoord;
 uniform mat4 projView, model, normal;
 uniform vec3 lightPos;
 uniform float time;
+uniform int waterEffect;
 
 void main()
 {

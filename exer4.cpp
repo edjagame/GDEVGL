@@ -1,4 +1,15 @@
 /******************************************************************************
+ * Controls:
+ * W - Camera FORWARD
+ * A - Camera LEFT
+ * S - Camera BACK
+ * D - Camera RIGHT
+ * E - Camera UP (global)
+ * Q - Camera DOWN (global)
+ * Mouse - Look Around
+ * P - Change Water Texture
+ * Camera Control Source:
+ * https://learnopengl.com/Getting-started/Camera
  *****************************************************************************/
 
 #include <iostream>
@@ -45578,8 +45589,11 @@ GLuint ladderVBO;
 GLuint waterVAO;
 GLuint waterVBO;  
 GLuint shader;      // combined vertex and fragment shader
-GLuint tileTexture, whiteTexture, waterTexture, noiseTexture;
+GLuint tileTexture, whiteTexture, waterTexture, noiseTexture, noiseTexture2;
 
+
+//Changes the water effect
+int waterEffect;
 
 // called by the main function to do initial setup, such as uploading vertex
 // arrays, shader programs, etc.; returns true if successful, false otherwise
@@ -45663,7 +45677,8 @@ bool setup()
     glEnableVertexAttribArray(2);
     glEnableVertexAttribArray(3);
     glEnableVertexAttribArray(4);
-
+    waterEffect = 2;
+    
     //SETUP TEXTURES
     tileTexture = gdevLoadTexture("tiles.jpg", GL_REPEAT, true, true);
     if (! tileTexture) return false;
@@ -45673,6 +45688,8 @@ bool setup()
     if (! whiteTexture) return false;
     noiseTexture = gdevLoadTexture("noise.jpg", GL_REPEAT, true, true);
     if (! whiteTexture) return false;
+    noiseTexture2 = gdevLoadTexture("noiseTexture.png", GL_REPEAT, true, true);
+    if (! whiteTexture) return false;
 
     shader = gdevLoadShader("exer4.vs", "exer4.fs");
     if (! shader)
@@ -45680,10 +45697,11 @@ bool setup()
     return true;
 }
 
-glm::vec3 eyePosition = glm::vec3(0.0f, 5.0f, -5.0f);
-glm::vec3 targetPosition = glm::vec3(0.0f, -5.0f, 5.0f);
-glm::vec3 upVector = glm::vec3(0.0f, 1.0f, 0.0f);
 
+// camera
+glm::vec3 cameraPos   = glm::vec3(0.0f, 2.0f, 7.0f);
+glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
+glm::vec3 cameraUp    = glm::vec3(0.0f, 1.0f, 0.0f);
 
 
 // called by the main function to do rendering per frame
@@ -45704,6 +45722,8 @@ void render()
     glBindTexture(GL_TEXTURE_2D, whiteTexture);
     glActiveTexture(GL_TEXTURE1);
     glBindTexture(GL_TEXTURE_2D, whiteTexture);
+    glActiveTexture(GL_TEXTURE2);
+    glBindTexture(GL_TEXTURE_2D, whiteTexture);
     glActiveTexture(GL_TEXTURE0);
 
     
@@ -45714,7 +45734,7 @@ void render()
     glm::mat4 normal;
 
 
-    float angle[] = {60.0, 180.0, 300.0};
+    float angle[] = {60.0 + time*5, 180.0 - time*4, 300.0 - time*3};
 
     glm::vec3 scales[] = {
         glm::vec3(0.6f, 0.6f, 0.6f),
@@ -45729,7 +45749,7 @@ void render()
         glm::vec3(  sin(time+2)/10.0+1.6, sin(time+4)/21.0-0.3, cos(time+4)/10.0+1.0),  
     };
 
-    glm::mat4 viewTransform = glm::lookAt(eyePosition, targetPosition + eyePosition, upVector);
+    glm::mat4 viewTransform = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
 
     //RENDER THE DUCKS
     glBindVertexArray(duckVAO);
@@ -45797,7 +45817,8 @@ void render()
     glActiveTexture(GL_TEXTURE1);
     glBindTexture(GL_TEXTURE_2D, waterTexture);
     glActiveTexture(GL_TEXTURE2);
-    glBindTexture(GL_TEXTURE_2D, noiseTexture);
+    if(waterEffect == 1) glBindTexture(GL_TEXTURE_2D, noiseTexture);
+    if(waterEffect == 2) glBindTexture(GL_TEXTURE_2D, noiseTexture2);
     glBindVertexArray( waterVAO);
     projView = glm::perspective(glm::radians(60.0f),
                             (float) WINDOW_WIDTH / WINDOW_HEIGHT,
@@ -45820,17 +45841,20 @@ void render()
     //LIGHT SHENANIGANS
     glm::vec3 lightPos = glm::vec3(10.0 * cos(time/3.0),100.0,10.0 * sin(time/3.0));
     //glm::vec3 lightPos = glm::vec3(0.0,10.0,0.0);
-    glm::vec3 lightColor = glm::vec3((sin(time/5)+1.0)/2.0,(sin(time/5+6.28/3.0)+1.0)/2.0,(sin(time/5+12.57/3.0)+1.0)/2.0);
-    //glm::vec3 lightColor = glm::vec3(0.8,0.8,0.8);
+    //glm::vec3 lightColor = glm::vec3((sin(time/5)+1.0)/2.0,(sin(time/5+6.28/3.0)+1.0)/2.0,(sin(time/5+12.57/3.0)+1.0)/2.0);
+    glm::vec3 lightColor = glm::vec3(0.9*(sin(time/4)/2+0.5),0.9*(sin(time/4)/2+0.5),0.8*(sin(time/10)/2+0.5));
     glUniform3fv(glGetUniformLocation(shader, "lightPos"), 1, glm::value_ptr(lightPos));
     glUniform3fv(glGetUniformLocation(shader, "lightColor"), 1, glm::value_ptr(lightColor));
-    glUniform3fv(glGetUniformLocation(shader, "eyePosition"), 1, glm::value_ptr(eyePosition));
+    glUniform3fv(glGetUniformLocation(shader, "eyePosition"), 1, glm::value_ptr(cameraPos));
     glUniform1f(glGetUniformLocation(shader, "time"), time);
 
     //TEXTURE UNIFORMS
     glUniform1i(glGetUniformLocation(shader, "texA"), 0);
     glUniform1i(glGetUniformLocation(shader, "texB"), 1);
     glUniform1i(glGetUniformLocation(shader, "texC"), 2);
+
+    //changing the water effect 
+    glUniform1i(glGetUniformLocation(shader, "waterEffect"), waterEffect);
 }
 
 /*****************************************************************************/
@@ -45844,13 +45868,78 @@ void handleKeys(GLFWwindow* pWindow, int key, int scancode, int action, int mode
     
     // if (key == GLFW_KEY_W && action == GLFW_PRESS)
     //     ;
-    const float cameraSpeed = 0.05f; // adjust accordingly
-    if (key == GLFW_KEY_W && action == GLFW_REPEAT) eyePosition.y += cameraSpeed;
-    if (key == GLFW_KEY_S && action == GLFW_REPEAT) eyePosition.y -= cameraSpeed;
-    if (key == GLFW_KEY_A && action == GLFW_REPEAT) eyePosition.x += cameraSpeed;
-    if (key == GLFW_KEY_D && action == GLFW_REPEAT) eyePosition.x -= cameraSpeed;
-    if (key == GLFW_KEY_E && action == GLFW_REPEAT) eyePosition.z += cameraSpeed;
-    if (key == GLFW_KEY_Q && action == GLFW_REPEAT) eyePosition.z -= cameraSpeed;
+
+
+    //MOVEMENT SPEED
+    float deltaTime = 0.0f;	// Time between current frame and last frame
+    float lastFrame = 0.0f; // Time of last frame
+    float currentFrame = glfwGetTime();
+    deltaTime = currentFrame - lastFrame;
+    lastFrame = currentFrame;  
+    const float cameraSpeed = 0.01f * deltaTime; 
+
+    //MOVEMENT CONTROLS
+    if (glfwGetKey(pWindow, GLFW_KEY_W) == GLFW_PRESS)
+        cameraPos += cameraSpeed * cameraFront;
+    if (glfwGetKey(pWindow, GLFW_KEY_S) == GLFW_PRESS)
+        cameraPos -= cameraSpeed * cameraFront;
+    if (glfwGetKey(pWindow, GLFW_KEY_A) == GLFW_PRESS)
+        cameraPos -= glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
+    if (glfwGetKey(pWindow, GLFW_KEY_D) == GLFW_PRESS)
+        cameraPos += glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
+    if (glfwGetKey(pWindow, GLFW_KEY_E) == GLFW_PRESS) 
+        cameraPos += cameraSpeed * cameraUp;
+    if (glfwGetKey(pWindow, GLFW_KEY_Q) == GLFW_PRESS) 
+        cameraPos -= cameraSpeed * cameraUp;
+
+    if (key == GLFW_KEY_P && action == GLFW_PRESS) {
+        if(waterEffect == 1)  {waterEffect = 2;} 
+        else if (waterEffect == 2) {waterEffect = 1;}
+    }
+
+}
+bool firstMouse = true;
+float yaw   = -90.0f;	// yaw is initialized to -90.0 degrees since a yaw of 0.0 results in a direction vector pointing to the right so we initially rotate a bit to the left.
+float pitch =  0.0f;
+float lastX =  800.0f / 2.0;
+float lastY =  600.0 / 2.0;
+float fov   =  45.0f;
+
+void mouse_callback(GLFWwindow* pWindow, double xposIn, double yposIn)
+{
+    float xpos = static_cast<float>(xposIn);
+    float ypos = static_cast<float>(yposIn);
+
+    if (firstMouse)
+    {
+        lastX = xpos;
+        lastY = ypos;
+        firstMouse = false;
+    }
+
+    float xoffset = xpos - lastX;
+    float yoffset = lastY - ypos; // reversed since y-coordinates go from bottom to top
+    lastX = xpos;
+    lastY = ypos;
+
+    float sensitivity = 0.1f; // change this value to your liking
+    xoffset *= sensitivity;
+    yoffset *= sensitivity;
+
+    yaw += xoffset;
+    pitch += yoffset;
+
+    // make sure that when pitch is out of bounds, screen doesn't get flipped
+    if (pitch > 89.0f)
+        pitch = 89.0f;
+    if (pitch < -89.0f)
+        pitch = -89.0f;
+
+    glm::vec3 front;
+    front.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
+    front.y = sin(glm::radians(pitch));
+    front.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
+    cameraFront = glm::normalize(front);
 }
 
 // handler called by GLFW when the window is resized
@@ -45888,11 +45977,12 @@ int main(int argc, char** argv)
 
     // set up callback functions to handle window system events
     glfwSetKeyCallback(pWindow, handleKeys);
+    glfwSetCursorPosCallback(pWindow, mouse_callback);
     glfwSetFramebufferSizeCallback(pWindow, handleResize);
-
+    
     // don't miss any momentary keypresses
     glfwSetInputMode(pWindow, GLFW_STICKY_KEYS, GLFW_TRUE);
-
+    glfwSetInputMode(pWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     // initialize GLAD, which acts as a library loader for the current OS's native OpenGL library
     gladLoadGLLoader((GLADloadproc) glfwGetProcAddress);
 
