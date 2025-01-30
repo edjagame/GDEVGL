@@ -17,7 +17,7 @@ if [ -z "$1" ]; then
 fi
 
 # show the user what the compile command will look like
-echo g++ ./$1 src/glad.cpp -std=c++17 -Wall -lglfw3 -Iinclude -Llib-universal -o ./${1%.*}.out
+echo clang++ ./$1 src/glad.cpp -std=c++17 -Wall -lglfw3 -framework Cocoa -framework IOKit -Iinclude -Llib-universal -o ./${1%.*}.out
 
 # actually compile the program && run it if compilation succeeds
-    g++ ./$1 src/glad.cpp -std=c++17 -Wall -lglfw3 -Iinclude -Llib-universal -o ./${1%.*}.out && ./${1%.*}.out
+clang++ ./$1 src/glad.cpp -std=c++17 -Wall -lglfw3 -framework Cocoa -framework IOKit -Iinclude -Llib-universal -o ./${1%.*}.out && ./${1%.*}.out

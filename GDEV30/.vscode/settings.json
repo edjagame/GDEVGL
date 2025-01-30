@@ -1,0 +1,7 @@
+{
+    "cmake.configureOnOpen": true,
+    "files.associations": {
+        "cmath": "cpp"
+    },
+    "cmake.sourceDirectory": "C:/Users/ejgme/EJ/GDEV31/GDEVGL/include/glm"
+}
