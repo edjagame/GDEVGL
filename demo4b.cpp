@@ -12,8 +12,8 @@
 #include <gdev.h>
 
 // change this to your desired window attributes
-#define WINDOW_WIDTH  800
-#define WINDOW_HEIGHT 450
+#define WINDOW_WIDTH  1600
+#define WINDOW_HEIGHT 900
 #define WINDOW_TITLE  "Hello Transform (use WASDQE and arrow keys; 1 and 2 to select object)"
 GLFWwindow *pWindow;
 
@@ -14034,12 +14034,12 @@ struct modelInstance
 
 
 modelInstance tailsInstances[2] = {
-    {3.0f, 3.0, 3.0f, 0.0f, 1.0f},
-    {5.0f, -10.0f, -10.0f, glm::radians(180.0f), 1.0f}
+    {0.0f, 0.0, 0.0f, 0.0f, 1.0f},
+    {0, 0, 0, 0, 1.0f}
 };
 modelInstance sonicInstances[2] = {
     {0.0f, 0.0f, 0.0f, 0.0f, 1.0f},
-    {-10.0f, -10.0f, -28.0f, glm::radians(180.0f), 1.0f}
+    {0, 0, 0, 0, 1.0f}
 };
 modelInstance chessInstances[1];
 
@@ -14141,21 +14141,6 @@ bool setup()
     if (! sonicTex)
         return false;
 
-    //Set up each individual instance's starting parameters
-    tailsInstances[0].x = -10.0f;
-    tailsInstances[0].y = -10.0f;
-    tailsInstances[0].z = -10.0f;
-
-    //Set up each individual instance's starting parameters
-    sonicInstances[0].x = -10.0f;
-    sonicInstances[0].y = -10.0f;
-    sonicInstances[0].z = -10.0f;
-
-    //Set up each individual instance's starting parameters
-    chessInstances[0].x = -10.0f;
-    chessInstances[0].y = -10.0f;
-    chessInstances[0].z = -10.0f;
-
     // enable OpenGL blending so that texels with alpha values less than one are drawn transparent
     // (you can omit these lines if you don't use alpha)
     glEnable(GL_BLEND);
@@ -14222,7 +14207,7 @@ void render()
         // ... set up the model matrix...
         glm::mat4 modelTransform = glm::mat4(1.0f);  // set to identity first
         modelTransform = glm::translate(modelTransform,
-                                        glm::vec3(tailsInstances[i].x -3.0f , tailsInstances[i].y, tailsInstances[i].z + 3.0f)); // translate xyz
+                                        glm::vec3(tailsInstances[i].x, tailsInstances[i].y, tailsInstances[i].z)); // translate xyz
         modelTransform = glm::rotate(modelTransform,
                                      tailsInstances[i].rotation,
                                      glm::vec3(1.0f, 0.0f, 0.0f));                                  // rotate around x
@@ -14254,7 +14239,7 @@ void render()
         // ... set up the model matrix...
         glm::mat4 modelTransform = glm::mat4(1.0f);  // set to identity first
         modelTransform = glm::translate(modelTransform,
-                                        glm::vec3(sonicInstances[i].x + 1.0f, sonicInstances[i].y + 1.0f, sonicInstances[i].z + 9.0f)); // translate xyz
+                                        glm::vec3(sonicInstances[i].x, sonicInstances[i].y, sonicInstances[i].z)); // translate xyz
         modelTransform = glm::rotate(modelTransform,
                                      sonicInstances[i].rotation,
                                      glm::vec3(1.0f, 0.0f, 0.0f));                                  // rotate around x
@@ -14286,7 +14271,7 @@ void render()
         // ... set up the model matrix...
         glm::mat4 modelTransform = glm::mat4(1.0f);  // set to identity first
         modelTransform = glm::translate(modelTransform,
-                                        glm::vec3(chessInstances[i].x - 1.0f, chessInstances[i].y- 1.0f , chessInstances[i].z- 1.0f )); // translate xyz
+                                        glm::vec3(chessInstances[i].x, chessInstances[i].y, chessInstances[i].z- 1.0f )); // translate xyz
         modelTransform = glm::rotate(modelTransform,
                                      chessInstances[i].rotation,
                                      glm::vec3(0.0f, 0.0f, 1.0f));                                  // rotate around z
