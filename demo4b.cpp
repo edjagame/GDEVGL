@@ -14029,17 +14029,27 @@ struct modelInstance
     float y         = 0.0f;
     float z         = 0.0f;  // ADDED FOR DEMO4B (to change the sprite's depth)
     float rotation  = 0.0f;
+    float newRotate = 0.0f; //new
     float scaling   = 1.0f;
 };
 
 
 modelInstance tailsInstances[2] = {
+<<<<<<< HEAD
     {0.0f, 0.0, 0.0f, 0.0f, 1.0f},
     {0, 0, 0, 0, 1.0f}
 };
 modelInstance sonicInstances[2] = {
     {0.0f, 0.0f, 0.0f, 0.0f, 1.0f},
     {0, 0, 0, 0, 1.0f}
+=======
+    {3.0f, 3.0, 3.0f, 0.0f, 0.0f, 1.0f},
+    {5.0f, -10.0f, -10.0f, glm::radians(180.0f), 0.0F, 1.0f}
+};
+modelInstance sonicInstances[2] = {
+    {0.0f, 0.0f, 0.0f, 0.0f,  glm::radians(-45.0f), 1.0f},
+    {-10.0f+7.0f, -10.0f, -28.0f+5.0f, glm::radians(180.0f), glm::radians(-45.0f), 1.0f}
+>>>>>>> f0509e3c4f966d49f6fae6524b7cd9d65d9adbfe
 };
 modelInstance chessInstances[1];
 
@@ -14207,7 +14217,11 @@ void render()
         // ... set up the model matrix...
         glm::mat4 modelTransform = glm::mat4(1.0f);  // set to identity first
         modelTransform = glm::translate(modelTransform,
+<<<<<<< HEAD
                                         glm::vec3(tailsInstances[i].x, tailsInstances[i].y, tailsInstances[i].z)); // translate xyz
+=======
+                                     glm::vec3(tailsInstances[i].x -3.0f , tailsInstances[i].y, tailsInstances[i].z + 3.0f)); // translate xyz
+>>>>>>> f0509e3c4f966d49f6fae6524b7cd9d65d9adbfe
         modelTransform = glm::rotate(modelTransform,
                                      tailsInstances[i].rotation,
                                      glm::vec3(1.0f, 0.0f, 0.0f));                                  // rotate around x
@@ -14233,9 +14247,20 @@ void render()
         glDrawArrays(GL_TRIANGLES, 0, sizeof(tailsVertices) / (8 * sizeof(float)));
     }
 
-    // Sonic Matrix Transformations
+    // new
+    // Sonic Movement Speed and Range Limit
+    // static int sonicState = 0; // track sonic's movement state
+    // 0 - forward diagonal right, 1 - 
+    float sonicSpeed = 1.5f;
+    float moveSonic = glfwGetTime() * sonicSpeed;
+    float range = 7.0f; // Limit movement range
+    float movementDirection[2] = {1.0f, -1.0f}; // an array of movement multipliers that allows the sonic's to move in different directions
+    // if we want a series of movements, maybe we can use states or the ugly way (add all movement directions to the struct)
+
+
     for (int i = 0; i < 2; i++)
     {
+<<<<<<< HEAD
         // ... set up the model matrix...
         glm::mat4 modelTransform = glm::mat4(1.0f);  // set to identity first
         modelTransform = glm::translate(modelTransform,
@@ -14250,11 +14275,45 @@ void render()
                                     glm::vec3(sonicInstances[i].scaling, sonicInstances[i].scaling, 1.0f));   // scale x and y
         glUniformMatrix4fv(glGetUniformLocation(shader, "modelTransform"),
                         1, GL_FALSE, glm::value_ptr(modelTransform));
+=======
+
+        // Calculate movement with stopping condition
+        float moveX = sonicInstances[i].x + movementDirection[i] * moveSonic;
+        float moveZ = sonicInstances[i].z + movementDirection[i] * moveSonic;
+
+
+        // Stop movement if it reaches the range
+        if (fabs(moveX - sonicInstances[i].x) > range)
+            moveX = sonicInstances[i].x + movementDirection[i] * range;
+
+
+        if (fabs(moveZ - sonicInstances[i].z) > range)
+            moveZ = sonicInstances[i].z + movementDirection[i] * range;
+
+
+        // Set up the model transformation matrix
+        glm::mat4 modelTransform = glm::mat4(1.0f);
+        modelTransform = glm::translate(modelTransform, 
+                                    glm::vec3(moveX, sonicInstances[i].y + 1.0f, moveZ));
+        modelTransform = glm::rotate(modelTransform, 
+                                    sonicInstances[i].rotation, 
+                                    glm::vec3(1.0f, 0.0f, 0.0f));                                  // rotate around x
+        modelTransform = glm::rotate(modelTransform, 
+                                    sonicInstances[i].rotation, 
+                                    glm::vec3(0.0f, 0.0f, 1.0f));                                  // rotate around z
+        modelTransform = glm::rotate(modelTransform, 
+                                    sonicInstances[i].newRotate, 
+                                    glm::vec3(0.0f, 1.0f, 0.0f));                                  // rotate around y
+        modelTransform = glm::scale(modelTransform, 
+                                    glm::vec3(sonicInstances[i].scaling, sonicInstances[i].scaling, 1.0f));
+
+        glUniformMatrix4fv(glGetUniformLocation(shader, "modelTransform"), 1, GL_FALSE, glm::value_ptr(modelTransform));
+>>>>>>> f0509e3c4f966d49f6fae6524b7cd9d65d9adbfe
 
         // ... set the active texture...
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, sonicTex);
-        //new
+ 
         glUniform1i(glGetUniformLocation(shader, "sonicTexture"), 0);
 
         // Set the uniform to use texture
@@ -14264,6 +14323,45 @@ void render()
         glBindVertexArray(sonicVAO);
         glDrawArrays(GL_TRIANGLES, 0, sizeof(sonicVertices) / (8 * sizeof(float)));
     }
+
+    // Sonic Matrix Transformations
+    // float sonicSpeed = 1.0f;
+    // float moveSonic = glfwGetTime() * sonicSpeed;
+
+    // for (int i = 0; i < 2; i++)
+    // {
+    //     // ... set up the model matrix...
+    //     glm::mat4 modelTransform = glm::mat4(1.0f);  // set to identity first
+    //     modelTransform = glm::translate(modelTransform,
+    //                                  glm::vec3((sonicInstances[i].x + 1.0f)*moveSonic, sonicInstances[i].y + 1.0f, (sonicInstances[i].z + 9.0f)*moveSonic)); // translate xyz
+    //     modelTransform = glm::rotate(modelTransform,
+    //                                  sonicInstances[i].rotation,
+    //                                  glm::vec3(1.0f, 0.0f, 0.0f));                                  // rotate around x
+    //     modelTransform = glm::rotate(modelTransform,
+    //                                  sonicInstances[i].rotation,
+    //                                  glm::vec3(0.0f, 0.0f, 1.0f));                                  // rotate around z
+    //     modelTransform = glm::rotate(modelTransform,
+    //                                  sonicInstances[i].newRotate,
+    //                                  glm::vec3(0.0f, 1.0f, 0.0f));                                  // rotate around z
+    //     modelTransform = glm::scale(modelTransform,
+    //                                 glm::vec3(sonicInstances[i].scaling, sonicInstances[i].scaling, 1.0f));   // scale x and y
+    //     glUniformMatrix4fv(glGetUniformLocation(shader, "modelTransform"),
+    //                     1, GL_FALSE, glm::value_ptr(modelTransform));
+
+
+    //     // ... set the active texture...
+    //     glActiveTexture(GL_TEXTURE0);
+    //     glBindTexture(GL_TEXTURE_2D, sonicTex);
+    //     //new
+    //     glUniform1i(glGetUniformLocation(shader, "sonicTexture"), 0);
+
+    //     // Set the uniform to use texture
+    //     glUniform1i(glGetUniformLocation(shader, "useTexture"), 0);
+
+    //     // ... then draw our triangles
+    //     glBindVertexArray(sonicVAO);
+    //     glDrawArrays(GL_TRIANGLES, 0, sizeof(sonicVertices) / (8 * sizeof(float)));
+    // }
 
     // Chess Matrix Transformations
     for (int i = 0; i < 1; i++)
