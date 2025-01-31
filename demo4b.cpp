@@ -18,7 +18,7 @@
 GLFWwindow *pWindow;
 
 // define a vertex array to hold our vertices
-float vertices[] = {
+float tailsVertices[] = {
     //Triangle #0
 -0.025899f,	2.168205f,	-0.178301f,		1.0f,	1.0f,	1.0f,	1.0f,		-0.042900f,	0.926800f,	-0.373000f,		0.051136f,	0.448663f,		
 -0.325072f,	2.238404f,	0.030530f,		1.0f,	1.0f,	1.0f,	1.0f,		-0.042900f,	0.926800f,	-0.373000f,		0.070015f,	0.464114f,		
@@ -7049,6 +7049,8 @@ struct modelInstance
     float z         = 0.0f;  // ADDED FOR DEMO4B (to change the sprite's depth)
     float rotation  = 0.0f;
     float scaling   = 1.0f;
+    int column      = 0;
+    int row         = 0;
 };
 modelInstance tailsInstances[2];
 
@@ -7069,7 +7071,7 @@ bool setup()
     glGenBuffers(1, &tailsVBO);
     glBindVertexArray(tailsVAO);
     glBindBuffer(GL_ARRAY_BUFFER, tailsVBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(tailsVertices), tailsVertices, GL_STATIC_DRAW);
 
     // on the VAO, register the current VBO with the following vertex attribute layout:
     // - the stride length of the vertex array is 12 floats (12 * sizeof(float))
@@ -7098,9 +7100,9 @@ bool setup()
         return false;
 
     //Set up each individual instance's starting parameters
-    tailsInstances[0].x = -10.0f;
-    tailsInstances[0].y = -10.0f;
-    tailsInstances[0].z = -10.0f;
+    tailsInstances[1].x = -10.0f;
+    tailsInstances[1].y = -10.0f;
+    tailsInstances[1].z = -10.0f;
 
     // enable OpenGL blending so that texels with alpha values less than one are drawn transparent
     // (you can omit these lines if you don't use alpha)
@@ -7181,7 +7183,7 @@ void render()
 
         // ... then draw our triangles
         glBindVertexArray(tailsVAO);
-        glDrawArrays(GL_TRIANGLES, 0, sizeof(vertices) / (8 * sizeof(float)));
+        glDrawArrays(GL_TRIANGLES, 0, sizeof(tailsVertices) / (8 * sizeof(float)));
     }
 }
 
