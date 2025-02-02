@@ -6,6 +6,8 @@
  *****************************************************************************/
 
 #include <iostream>
+#include <cstdlib>
+#include <vector>
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <glm/gtc/type_ptr.hpp>
@@ -14010,6 +14012,8 @@ float sonicVertices[] = {
 
 };
 
+
+
 // define OpenGL object IDs to represent the vertex array, shader program, and texture in the GPU
 GLuint tailsVAO;         // vertex array object (stores the render state for our vertex array)
 GLuint tailsVBO;         // vertex buffer object (reserves GPU memory for our vertex array)
@@ -14031,16 +14035,46 @@ struct modelInstance
     float rotation  = 0.0f;
     float newRotate = 0.0f; //new
     float scaling   = 1.0f;
+
+    int   state     = 0   ;
+    //for the chess movement
+    int   row       = 0   ;
+    int   column    = 0   ;
 };
 
+float tileWidth = 1.0f;
+
+
+float smallAngle = glm::radians(26.565f);
+float bigAngle = glm::radians(63.435f);
+std::vector<std::pair<int, int>> knightMoves = {
+    {1, 2},
+    {2, 1},
+    {2, -1},
+    {1, -2},
+    {-1, -2},
+    {-2, -1},
+    {-2, 1},
+    {-1, 2}
+};
+std::vector<float> knightAngles = {
+    360.0-26.565,
+    360.0-63.435,
+    63.435,
+    26.565,
+    26.565,
+    63.435,
+    360.0-63.435,
+    360.0-26.565
+};
 
 modelInstance tailsInstances[2] = {
-    {0.0f, 0.0, 0.0f, 0.0f, 1.0f},
-    {0, 0, 0, 0, 1.0f}
+    {2, 0, 2, 0, 0},
+    {0, 100, 0, 0, 0}
 };
 modelInstance sonicInstances[2] = {
-    {0.0f, 0.0f, 0.0f, 0.0f, 1.0f},
-    {0, 0, 0, 0, 1.0f}
+    {0, 0, 0, 0, 0},
+    {0, 0, 0, 0, 0}
 };
 modelInstance chessInstances[1];
 
@@ -14048,8 +14082,8 @@ int current = 0;
 double previousTime = 0.0;
 
 // Set up the initial camera vectors
-glm::vec3 cameraPos   = glm::vec3(0.0f, 2.0f, 7.0f);
-glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
+glm::vec3 cameraPos   = glm::vec3(0.0f, 40.0f, 0.0f);
+glm::vec3 cameraFront = glm::vec3(0.0f, -1.0f, 0.0f);
 glm::vec3 cameraUp    = glm::vec3(0.0f, 1.0f, 0.0f);
 
 // called by the main function to do initial setup, such as uploading vertex
@@ -14204,8 +14238,13 @@ void render()
     // Tails Matrix Transformations
     for (int i = 0; i < 2; i++)
     {
+
         // ... set up the model matrix...
         glm::mat4 modelTransform = glm::mat4(1.0f);  // set to identity first
+
+
+
+
         modelTransform = glm::translate(modelTransform,
                                         glm::vec3(tailsInstances[i].x, tailsInstances[i].y, tailsInstances[i].z)); // translate xyz
         modelTransform = glm::rotate(modelTransform,
@@ -14233,7 +14272,6 @@ void render()
         glDrawArrays(GL_TRIANGLES, 0, sizeof(tailsVertices) / (8 * sizeof(float)));
     }
 
-    // new
     // Sonic Movement Speed and Range Limit
     // static int sonicState = 0; // track sonic's movement state
     // 0 - forward diagonal right, 1 - 
@@ -14241,8 +14279,7 @@ void render()
     float moveSonic = glfwGetTime() * sonicSpeed;
     float range = 7.0f; // Limit movement range
     float movementDirection[2] = {1.0f, -1.0f}; // an array of movement multipliers that allows the sonic's to move in different directions
-    // if we want a series of movements, maybe we can use states or the ugly way (add all movement directions to the struct
-
+    // Sonic Matrix Transformations
     for (int i = 0; i < 2; i++)
     {
 
@@ -14320,7 +14357,6 @@ void render()
         glBindVertexArray(chessVAO);
         glDrawArrays(GL_TRIANGLES, 0, sizeof(chessVertices) / (8 * sizeof(float)));
     }
-   
    
 
 }
