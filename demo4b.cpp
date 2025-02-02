@@ -19,6 +19,7 @@
 #define WINDOW_TITLE  "Hello Transform (use WASDQE and arrow keys; 1 and 2 to select object)"
 #define PI 3.14159265358979323846
 GLFWwindow *pWindow;
+float fov   =  75.0f;
 
 // define a vertex array to hold our vertices
 float tailsVertices[] = {
@@ -14117,8 +14118,8 @@ int current = 0;
 double previousTime = 0.0;
 
 // Set up the initial camera vectors
-glm::vec3 cameraPos   = glm::vec3(0.0f, 70.0f, 0.0f);
-glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
+glm::vec3 cameraPos   = glm::vec3(0.0f, 10.0f, 40.0f);
+glm::vec3 cameraFront = glm::vec3(0.0f, -1.0f, -3.0f);
 glm::vec3 cameraUp    = glm::vec3(0.0f, 1.0f, 0.0f);
 
 // called by the main function to do initial setup, such as uploading vertex
@@ -14260,10 +14261,10 @@ void render()
 
     // ... set up the projection matrix...
     glm::mat4 projectionTransform;
-    projectionTransform = glm::perspective(glm::radians(45.0f),                   // fov
+    projectionTransform = glm::perspective(glm::radians(fov),                   // fov
                                            (float) WINDOW_WIDTH / WINDOW_HEIGHT,  // aspect ratio
                                            0.1f,                                  // near plane
-                                           100.0f);                               // far plane
+                                           200.0f);                               // far plane
     glUniformMatrix4fv(glGetUniformLocation(shader, "projectionTransform"),
                        1, GL_FALSE, glm::value_ptr(projectionTransform));
 
@@ -14481,10 +14482,9 @@ void handleResize(GLFWwindow* pWindow, int width, int height)
 
 bool firstMouse = true;
 float yaw   = -90.0f;	
-float pitch =  0.0f;
+float pitch =  -atan(cameraFront.y/cameraFront.z)*180/PI;
 float lastX =  800.0f / 2.0;
 float lastY =  600.0 / 2.0;
-float fov   =  45.0f;
 
 void mouse_callback(GLFWwindow* pWindow, double xposIn, double yposIn)
 {
