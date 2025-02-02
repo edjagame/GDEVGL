@@ -6,7 +6,7 @@
  *****************************************************************************/
 
 #include <iostream>
-#include <cstdlib>
+#include <random>
 #include <vector>
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -17,6 +17,7 @@
 #define WINDOW_WIDTH  1600
 #define WINDOW_HEIGHT 900
 #define WINDOW_TITLE  "Hello Transform (use WASDQE and arrow keys; 1 and 2 to select object)"
+#define PI 3.14159265358979323846
 GLFWwindow *pWindow;
 
 // define a vertex array to hold our vertices
@@ -14036,17 +14037,19 @@ struct modelInstance
     float newRotate = 0.0f; //new
     float scaling   = 1.0f;
 
-    int   state     = 0   ;
     //for the chess movement
+    int   state     = 0   ;
     int   row       = 0   ;
     int   column    = 0   ;
+    int   nextMove  = 0   ;
+    float t = 0;
 };
 
-float tileWidth = 1.0f;
+float tileWidth = 38.0/7.0f;
 
 
-float smallAngle = glm::radians(26.565f);
-float bigAngle = glm::radians(63.435f);
+float smallAngle = 26.565f;
+float bigAngle = 63.435f;
 std::vector<std::pair<int, int>> knightMoves = {
     {1, 2},
     {2, 1},
@@ -14058,20 +14061,52 @@ std::vector<std::pair<int, int>> knightMoves = {
     {-1, 2}
 };
 std::vector<float> knightAngles = {
-    360.0-26.565,
-    360.0-63.435,
-    63.435,
-    26.565,
-    26.565,
-    63.435,
-    360.0-63.435,
-    360.0-26.565
+    bigAngle,
+    smallAngle,
+    -smallAngle,
+    -bigAngle,
+    180+bigAngle,
+    180+smallAngle,
+    180-smallAngle,
+    180-bigAngle
 };
 
+// This block of code locks the position of Tails to a square in the chessboard
+// Tails states:
+// 0 : idle
+// 1 : moving
+// 2 : rotating
+float originX = -16.5; 
+float originY = 0;
+float originZ = -16.5;
+float tailsOffsetX = -2.5;
+float tailsOffsetZ = -2.5;
 modelInstance tailsInstances[2] = {
-    {2, 0, 2, 0, 0},
-    {0, 100, 0, 0, 0}
+    {   
+        originX + tailsOffsetX + 0 * tileWidth,
+        originY, 
+        originZ + tailsOffsetZ + 0 * tileWidth, 
+        0, 
+        0,
+        1.0,
+        0,
+        0, //row
+        0 //col
+    },
+
+    {   
+        originX + tailsOffsetX + 7 * tileWidth,
+        originY, 
+        originZ + tailsOffsetZ + 6 * tileWidth, 
+        0, 
+        0,
+        1.0,
+        0,
+        7,
+        6
+    }
 };
+
 modelInstance sonicInstances[2] = {
     {0, 0, 0, 0, 0},
     {0, 0, 0, 0, 0}
@@ -14082,8 +14117,8 @@ int current = 0;
 double previousTime = 0.0;
 
 // Set up the initial camera vectors
-glm::vec3 cameraPos   = glm::vec3(0.0f, 40.0f, 0.0f);
-glm::vec3 cameraFront = glm::vec3(0.0f, -1.0f, 0.0f);
+glm::vec3 cameraPos   = glm::vec3(0.0f, 70.0f, 0.0f);
+glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
 glm::vec3 cameraUp    = glm::vec3(0.0f, 1.0f, 0.0f);
 
 // called by the main function to do initial setup, such as uploading vertex
@@ -14189,11 +14224,17 @@ bool setup()
 }
 
 // called by the main function to do rendering per frame
+
 void render()
 {
+
+    // randomizes the random seed
+    srand(glfwGetTime()*1000);
+
     // find the elapsed time since the last frame
     double currentTime = glfwGetTime();
-    float cameraSpeed = (currentTime - previousTime) * 5;
+    double deltaTime = currentTime - previousTime;
+    float cameraSpeed = deltaTime * 20;
     previousTime = currentTime;
     
     //MOVEMENT CONTROLS
@@ -14236,28 +14277,87 @@ void render()
                        1, GL_FALSE, glm::value_ptr(viewTransform));
 
     // Tails Matrix Transformations
-    for (int i = 0; i < 2; i++)
-    {
+    std::vector<std::pair<int, int>> validMoves;
+    std::vector<float> validAngles;
+    int newRow, newColumn;
+    for (int i = 0; i < 2; i++) {
+
+        validMoves.clear();
+        validAngles.clear();
+
+        tailsInstances[i].t += deltaTime;
+
+        for(unsigned int j=0; j<knightMoves.size(); j++) {
+            newRow = tailsInstances[i].row + knightMoves[j].first;
+            newColumn = tailsInstances[i].column + knightMoves[j].second;
+            if(newRow >= 0 && newRow < 8 && newColumn >= 0 && newColumn < 8) {
+                validMoves.push_back({knightMoves[j].first, knightMoves[j].second});
+                validAngles.push_back(knightAngles[j]);
+            }
+        }
+
+        if (tailsInstances[i].state == 0){
+            if (tailsInstances[i].t >= 0.3f) {
+                tailsInstances[i].nextMove = rand() % validMoves.size();
+                tailsInstances[i].state = 1;
+                tailsInstances[i].t = 0;
+            }
+        }
 
         // ... set up the model matrix...
         glm::mat4 modelTransform = glm::mat4(1.0f);  // set to identity first
-
-
-
-
         modelTransform = glm::translate(modelTransform,
-                                        glm::vec3(tailsInstances[i].x, tailsInstances[i].y, tailsInstances[i].z)); // translate xyz
+                                    glm::vec3(tailsInstances[i].x, tailsInstances[i].y, tailsInstances[i].z)); // translate xyz
+        if (tailsInstances[i].state == 2) {
+            float time1 = 1.0f;
+            
+            modelTransform = glm::translate(modelTransform, 
+                                            glm::vec3(validMoves[tailsInstances[i].nextMove].second * tileWidth * (tailsInstances[i].t / time1), 
+                                                      sin(PI * tailsInstances[i].t / 1.0f) * 10.0f, 
+                                                      validMoves[tailsInstances[i].nextMove].first * tileWidth * (tailsInstances[i].t / time1)));
+            if (tailsInstances[i].t >= time1) {
+                tailsInstances[i].state = 0;
+                tailsInstances[i].t = 0;
+                tailsInstances[i].row += validMoves[tailsInstances[i].nextMove].first;
+                tailsInstances[i].column += validMoves[tailsInstances[i].nextMove].second;
+                tailsInstances[i].x = originX + tailsOffsetX + tailsInstances[i].column * tileWidth;
+                tailsInstances[i].z = originZ + tailsOffsetZ + tailsInstances[i].row * tileWidth;
+            } 
+        }
+
         modelTransform = glm::rotate(modelTransform,
-                                     tailsInstances[i].rotation,
-                                     glm::vec3(1.0f, 0.0f, 0.0f));                                  // rotate around x
-        modelTransform = glm::rotate(modelTransform,
-                                     tailsInstances[i].rotation,
-                                     glm::vec3(0.0f, 0.0f, 1.0f));                                  // rotate around z
+                                    glm::radians(tailsInstances[i].rotation),
+                                    glm::vec3(0.0f, 1.0f, 0.0f));
+        if (tailsInstances[i].state == 1) {
+            
+            float turnAngle = validAngles[tailsInstances[i].nextMove] - tailsInstances[i].rotation - 90.0f;
+            if(fabs(turnAngle) > 180) {
+                turnAngle = 360 - fabs(turnAngle);
+            }
+            float time2 = 1.0f * fabs(turnAngle) / 180.0;
+            modelTransform = glm::rotate(modelTransform, 
+                                         glm::radians(turnAngle * (tailsInstances[i].t / time2)),
+                                         glm::vec3(0.0f, 1.0f, 0.0f));
+
+            if (tailsInstances[i].t >= time2) {
+                tailsInstances[i].state = 2;
+                tailsInstances[i].rotation = validAngles[tailsInstances[i].nextMove] - 90;
+                tailsInstances[i].t = 0;    
+            }
+        }
+        if(tailsInstances[i].state == 2) {
+            modelTransform = glm::rotate(modelTransform,
+                                        glm::radians(-360.0f * tailsInstances[i].t),
+                                        glm::vec3(0.0f, 0.0f, 1.0f));
+        }
         modelTransform = glm::scale(modelTransform,
-                                    glm::vec3(tailsInstances[i].scaling, tailsInstances[i].scaling, 1.0f));   // scale x and y
+                                    glm::vec3(tailsInstances[i].scaling, tailsInstances[i].scaling, tailsInstances[i].scaling));   // scale x and y
+        
+        //Rotate state
+        
+
         glUniformMatrix4fv(glGetUniformLocation(shader, "modelTransform"),
                         1, GL_FALSE, glm::value_ptr(modelTransform));
-
         // ... set the active texture...
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, tailsTex);
@@ -14270,6 +14370,7 @@ void render()
         // ... then draw our triangles
         glBindVertexArray(tailsVAO);
         glDrawArrays(GL_TRIANGLES, 0, sizeof(tailsVertices) / (8 * sizeof(float)));
+
     }
 
     // Sonic Movement Speed and Range Limit
