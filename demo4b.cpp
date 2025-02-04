@@ -16,7 +16,7 @@
 // change this to your desired window attributes
 #define WINDOW_WIDTH  1600
 #define WINDOW_HEIGHT 900
-#define WINDOW_TITLE  "Hello Transform (use WASDQE and arrow keys; 1 and 2 to select object)"
+#define WINDOW_TITLE  "Hello Sonic and Friends! >:D"
 #define PI 3.14159265358979323846
 GLFWwindow *pWindow;
 float fov   =  75.0f;
@@ -21235,18 +21235,46 @@ void render()
     previousTime = currentTime;
     
     //MOVEMENT CONTROLS
-    if (glfwGetKey(pWindow, GLFW_KEY_W) == GLFW_PRESS)
+    if (glfwGetKey(pWindow, GLFW_KEY_W) == GLFW_PRESS){
         cameraPos += cameraSpeed * cameraFront;
-    if (glfwGetKey(pWindow, GLFW_KEY_S) == GLFW_PRESS)
+        // restrict the camera from going higher than y = 30.0
+        // restrict the camera from going lower than y = 3.0
+        if (cameraPos.y > 30.0f) { 
+            cameraPos.y = 30.0f;
+        } 
+        if (cameraPos.y < 3.0f) { 
+            cameraPos.y = 3.0f;
+        }
+    }
+    if (glfwGetKey(pWindow, GLFW_KEY_S) == GLFW_PRESS){
         cameraPos -= cameraSpeed * cameraFront;
+        // restrict the camera from going higher than y = 30.0
+        // restrict the camera from going lower than y = 3.0
+        if (cameraPos.y > 30.0f) { 
+            cameraPos.y = 30.0f;
+        } 
+        if (cameraPos.y < 3.0f) { 
+            cameraPos.y = 3.0f;
+        }
+    }
     if (glfwGetKey(pWindow, GLFW_KEY_A) == GLFW_PRESS)
         cameraPos -= glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
     if (glfwGetKey(pWindow, GLFW_KEY_D) == GLFW_PRESS)
         cameraPos += glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
-    if (glfwGetKey(pWindow, GLFW_KEY_E) == GLFW_PRESS) 
+    if (glfwGetKey(pWindow, GLFW_KEY_E) == GLFW_PRESS) {
         cameraPos += cameraSpeed * cameraUp;
-    if (glfwGetKey(pWindow, GLFW_KEY_Q) == GLFW_PRESS) 
+    // restrict the camera from going higher than y = 30.0
+        if (cameraPos.y > 30.0f) { 
+            cameraPos.y = 30.0f;
+        }
+    }    
+    if (glfwGetKey(pWindow, GLFW_KEY_Q) == GLFW_PRESS) {
         cameraPos -= cameraSpeed * cameraUp;
+        // restrict the camera from going lower than y = 3.0
+        if (cameraPos.y < 3.0f) { 
+            cameraPos.y = 3.0f;
+        }
+    }
 
     // clear the whole frame
     glClearColor(0.0f, 0.3f, 0.3f, 1.0f);
@@ -21441,8 +21469,8 @@ void render()
         }
         if(sonicInstances[i].state == 2) {
             modelTransform = glm::rotate(modelTransform,
-                                        glm::radians(-360.0f * sonicInstances[i].t),
-                                        glm::vec3(0.0f, 0.0f, 1.0f));
+                                        glm::radians(1024.0f * sonicInstances[i].t),
+                                        glm::vec3(1.0f, 0.0f, 1.0f));
         }
         modelTransform = glm::scale(modelTransform,
                                     glm::vec3(sonicInstances[i].scaling, sonicInstances[i].scaling, sonicInstances[i].scaling));   // scale x and y
@@ -21608,7 +21636,7 @@ void handleResize(GLFWwindow* pWindow, int width, int height)
 }
 
 bool firstMouse = true;
-float yaw   = -90.0f;	
+float yaw   = -90.0f;    
 float pitch =  -atan(cameraFront.y/cameraFront.z)*180/PI;
 float lastX =  800.0f / 2.0;
 float lastY =  600.0 / 2.0;
