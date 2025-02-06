@@ -21010,8 +21010,8 @@ modelInstance sonicInstances[2] = {
         0, 
         1.0,
         0,
-        2,
-        3
+        3,
+        2
     },
     {
         sonicOriginX + sonicOffsetX + 4 * tileWidth, 
@@ -21022,7 +21022,7 @@ modelInstance sonicInstances[2] = {
         1.0,
         0,
         5,
-        5
+        4
     }
 };
 
@@ -21065,8 +21065,8 @@ modelInstance knucklesInstances[2] = {
         0, 
         0.7, 
         0, 
-        1, 
-        8
+        3, 
+        4
     },
     {
         knucklesOriginX + knucklesOffsetX + 5 * tileWidth, 
@@ -21076,8 +21076,8 @@ modelInstance knucklesInstances[2] = {
         -160, 
         0.7, 
         0, 
-        8,     
-        1
+        1,     
+        5
     }
 };
 
@@ -21306,11 +21306,12 @@ void render()
         modelTransform = glm::translate(modelTransform,
                                     glm::vec3(tailsInstances[i].x, tailsInstances[i].y, tailsInstances[i].z)); // translate xyz
         if (tailsInstances[i].state == 2) {
+            
             float time1 = 1.0f;
             
             modelTransform = glm::translate(modelTransform, 
                                             glm::vec3(validMoves[tailsInstances[i].nextMove].second * tileWidth * (tailsInstances[i].t / time1), 
-                                                      sin(PI * tailsInstances[i].t / 1.0f) * 10.0f, 
+                                                      20 * sin(PI * tailsInstances[i].t * (1 / time1)), 
                                                       validMoves[tailsInstances[i].nextMove].first * tileWidth * (tailsInstances[i].t / time1)));
             if (tailsInstances[i].t >= time1) {
                 tailsInstances[i].state = 0;
@@ -21344,7 +21345,7 @@ void render()
         }
         if(tailsInstances[i].state == 2) {
             modelTransform = glm::rotate(modelTransform,
-                                        glm::radians(-360.0f * tailsInstances[i].t),
+                                        glm::radians(0.0f * tailsInstances[i].t),
                                         glm::vec3(0.0f, 0.0f, 1.0f));
         }
         modelTransform = glm::scale(modelTransform,
@@ -21374,6 +21375,9 @@ void render()
     std::vector<std::pair<int, int>> sonicValidMoves;
     std::vector<float> sonicValidAngles;
     int newRow0, newColumn0;
+    float sonicTime0 = 0.3f; //sonic idle time;
+    float sonicTime1 = 1.0f; //sonic rotat time;
+    float sonicTime2 = 2.0f; //sonic move time;
     for (int i = 0; i < 2; i++) {
 
         sonicValidMoves.clear();
@@ -21381,17 +21385,41 @@ void render()
 
         sonicInstances[i].t += deltaTime;
 
-        for(unsigned int j=0; j<bishopMoves.size(); j++) {
-            newRow0 = sonicInstances[i].row + bishopMoves[j].first;
-            newColumn0 = sonicInstances[i].column + bishopMoves[j].second;
-            if(newRow0 >= 0 && newRow0 < 8 && newColumn0 >= 0 && newColumn0 < 8) {
-                sonicValidMoves.push_back({bishopMoves[j].first, bishopMoves[j].second});
-                sonicValidAngles.push_back(bishopAngles[j]);
+        for(unsigned int j=1; j<8; j++){
+            newRow0 = sonicInstances[i].row + j;
+            newColumn0 = sonicInstances[i].column + j;
+            if (newRow0 >= 0 && newRow0 < 8 && newColumn0 >= 0 && newColumn0 < 8) {
+                sonicValidMoves.push_back({j, j});
+                sonicValidAngles.push_back(45.0f);
+            }
+        }
+        for(unsigned int j=1; j<8; j++){
+            newRow0 = sonicInstances[i].row - j;
+            newColumn0 = sonicInstances[i].column + j;
+            if (newRow0 >= 0 && newRow0 < 8 && newColumn0 >= 0 && newColumn0 < 8) {
+                sonicValidMoves.push_back({-j, j});
+                sonicValidAngles.push_back(135.0f);
+            }
+        }
+        for(unsigned int j=1; j<8; j++){
+            newRow0 = sonicInstances[i].row - j;
+            newColumn0 = sonicInstances[i].column - j;
+            if (newRow0 >= 0 && newRow0 < 8 && newColumn0 >= 0 && newColumn0 < 8) {
+                sonicValidMoves.push_back({-j, -j});
+                sonicValidAngles.push_back(225.0f);
+            }
+        }
+        for(unsigned int j=1; j<8; j++){
+            newRow0 = sonicInstances[i].row + j;
+            newColumn0 = sonicInstances[i].column - j;
+            if (newRow0 >= 0 && newRow0 < 8 && newColumn0 >= 0 && newColumn0 < 8) {
+                sonicValidMoves.push_back({j, -j});
+                sonicValidAngles.push_back(315.0f);
             }
         }
 
         if (sonicInstances[i].state == 0){
-            if (sonicInstances[i].t >= 0.3f) {
+            if (sonicInstances[i].t >= sonicTime0) {
                 sonicInstances[i].nextMove = rand() % sonicValidMoves.size();
                 sonicInstances[i].state = 1;
                 sonicInstances[i].t = 0;
@@ -21404,12 +21432,14 @@ void render()
                                     glm::vec3(sonicInstances[i].x, sonicInstances[i].y, sonicInstances[i].z)); // translate xyz
         if (sonicInstances[i].state == 2) {
             float time1 = 1.0f;
-            
-            modelTransform = glm::translate(modelTransform, 
-                                            glm::vec3(sonicValidMoves[sonicInstances[i].nextMove].second * tileWidth * (sonicInstances[i].t / time1), 
-                                                      sin(PI * sonicInstances[i].t / 1.0f) * 10.0f, 
-                                                      sonicValidMoves[sonicInstances[i].nextMove].first * tileWidth * (sonicInstances[i].t / time1)));
-            if (sonicInstances[i].t >= time1) {
+
+            if (sonicInstances[i].t >= sonicTime2 * 0.5) {
+                modelTransform = glm::translate(modelTransform, 
+                                                glm::vec3((sonicValidMoves[sonicInstances[i].nextMove].second * tileWidth * 0.5) * pow(sonicTime2 * 0.4, -3) * pow(sonicInstances[i].t - sonicTime2 * 0.5, 3), 
+                                                        0, 
+                                                        (sonicValidMoves[sonicInstances[i].nextMove].first * tileWidth * 0.5) * pow(sonicTime2 * 0.4, -3) * pow(sonicInstances[i].t - sonicTime2 * 0.5, 3)));
+            }
+            if (sonicInstances[i].t >= sonicTime2) {
                 sonicInstances[i].state = 0;
                 sonicInstances[i].t = 0;
                 sonicInstances[i].row += sonicValidMoves[sonicInstances[i].nextMove].first;
@@ -21418,22 +21448,22 @@ void render()
                 sonicInstances[i].z = sonicOriginZ + sonicOffsetZ + sonicInstances[i].row * tileWidth;
             } 
         }
-
+        
         modelTransform = glm::rotate(modelTransform,
                                     glm::radians(sonicInstances[i].rotation),
                                     glm::vec3(0.0f, 1.0f, 0.0f));
         if (sonicInstances[i].state == 1) {
-            
+
             float turnAngle = sonicValidAngles[sonicInstances[i].nextMove] - sonicInstances[i].rotation - 90.0f;
             if(fabs(turnAngle) > 180) {
                 turnAngle = 360 - fabs(turnAngle);
             }
             float time2 = 1.0f * fabs(turnAngle) / 180.0;
             modelTransform = glm::rotate(modelTransform, 
-                                         glm::radians(turnAngle * (sonicInstances[i].t / time2)),
+                                         glm::radians(turnAngle * (sonicInstances[i].t / sonicTime1)),
                                          glm::vec3(0.0f, 1.0f, 0.0f));
 
-            if (sonicInstances[i].t >= time2) {
+            if (sonicInstances[i].t >= sonicTime1) {
                 sonicInstances[i].state = 2;
                 sonicInstances[i].rotation = sonicValidAngles[sonicInstances[i].nextMove] - 90;
                 sonicInstances[i].t = 0;    
@@ -21441,7 +21471,7 @@ void render()
         }
         if(sonicInstances[i].state == 2) {
             modelTransform = glm::rotate(modelTransform,
-                                        glm::radians(-360.0f * sonicInstances[i].t),
+                                        glm::radians(-3600.0f * float(pow(sonicTime2,-3)) * float(pow(sonicInstances[i].t,3))),
                                         glm::vec3(0.0f, 0.0f, 1.0f));
         }
         modelTransform = glm::scale(modelTransform,
@@ -21475,12 +21505,36 @@ void render()
 
         knucklesInstances[i].t += deltaTime;
 
-        for(unsigned int j=0; j<rookMoves.size(); j++) {
-            newRow1 = knucklesInstances[i].row + rookMoves[j].first;
-            newColumn1 = knucklesInstances[i].column + rookMoves[j].second;
-            if(newRow1 >= 0 && newRow1 < 8 && newColumn1 >= 0 && newColumn1 < 8) {
-                knucklesValidMoves.push_back({rookMoves[j].first, rookMoves[j].second});
-                knucklesValidAngles.push_back(rookAngles[j]);
+        for(unsigned int j=1; j<8; j++){
+            newRow1 = knucklesInstances[i].row + j;
+            newColumn1 = knucklesInstances[i].column;
+            if (newRow1 >= 0 && newRow1 < 8 && newColumn1 >= 0 && newColumn1 < 8) {
+                knucklesValidMoves.push_back({j, 0});
+                knucklesValidAngles.push_back(0.0f);
+            }
+        }
+        for(unsigned int j=1; j<8; j++){
+            newRow1 = knucklesInstances[i].row - j;
+            newColumn1 = knucklesInstances[i].column;
+            if (newRow1 >= 0 && newRow1 < 8 && newColumn1 >= 0 && newColumn1 < 8) {
+                knucklesValidMoves.push_back({-j, 0});
+                knucklesValidAngles.push_back(180.0f);
+            }
+        }
+        for(unsigned int j=1; j<8; j++){
+            newRow1 = knucklesInstances[i].row;
+            newColumn1 = knucklesInstances[i].column + j;
+            if (newRow1 >= 0 && newRow1 < 8 && newColumn1 >= 0 && newColumn1 < 8) {
+                knucklesValidMoves.push_back({0, j});
+                knucklesValidAngles.push_back(90.0f);
+            }
+        }
+        for(unsigned int j=1; j<8; j++){
+            newRow1 = knucklesInstances[i].row;
+            newColumn1 = knucklesInstances[i].column - j;
+            if (newRow1 >= 0 && newRow1 < 8 && newColumn1 >= 0 && newColumn1 < 8) {
+                knucklesValidMoves.push_back({0, -j});
+                knucklesValidAngles.push_back(270.0f);
             }
         }
 
@@ -21501,7 +21555,7 @@ void render()
             
             modelTransform = glm::translate(modelTransform, 
                                             glm::vec3(knucklesValidMoves[knucklesInstances[i].nextMove].second * tileWidth * (knucklesInstances[i].t / time1), 
-                                                      sin(PI * knucklesInstances[i].t / 1.0f) * 10.0f, 
+                                                      fabs(5*sin((abs(knucklesValidMoves[knucklesInstances[i].nextMove].second)+abs(knucklesValidMoves[knucklesInstances[i].nextMove].first)) * PI * knucklesInstances[i].t * (1 / time1))), 
                                                       knucklesValidMoves[knucklesInstances[i].nextMove].first * tileWidth * (knucklesInstances[i].t / time1)));
             if (knucklesInstances[i].t >= time1) {
                 knucklesInstances[i].state = 0;
@@ -21535,7 +21589,7 @@ void render()
         }
         if(knucklesInstances[i].state == 2) {
             modelTransform = glm::rotate(modelTransform,
-                                        glm::radians(-360.0f * knucklesInstances[i].t),
+                                        glm::radians((abs(knucklesValidMoves[knucklesInstances[i].nextMove].second)+abs(knucklesValidMoves[knucklesInstances[i].nextMove].first)) * -360.0f * knucklesInstances[i].t),
                                         glm::vec3(0.0f, 0.0f, 1.0f));
         }
         modelTransform = glm::scale(modelTransform,
@@ -21567,7 +21621,10 @@ void render()
                                         glm::vec3(chessInstances[i].x, chessInstances[i].y, chessInstances[i].z)); // translate xyz
         modelTransform = glm::rotate(modelTransform,
                                      chessInstances[i].rotation,
-                                     glm::vec3(0.0f, 0.0f, 1.0f));                                  // rotate around z
+                                     glm::vec3(0.0f, 0.0f, 1.0f));                                    // rotate around z
+        modelTransform = glm::rotate(modelTransform,
+                                     0.0f,//float(10*glfwGetTime()),
+                                     glm::vec3(0.0f, 1.0f, 0.0f));
         modelTransform = glm::scale(modelTransform,
                                     glm::vec3(chessInstances[i].scaling * 0.4f, chessInstances[i].scaling * 0.4f, 1.0f * 0.4f));   // scale x and y
         glUniformMatrix4fv(glGetUniformLocation(shader, "modelTransform"),
