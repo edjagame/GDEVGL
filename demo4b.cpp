@@ -21238,30 +21238,96 @@ void render()
     //MOVEMENT CONTROLS
     if (glfwGetKey(pWindow, GLFW_KEY_W) == GLFW_PRESS){
         cameraPos += cameraSpeed * cameraFront;
-        // restrict the camera from going higher than y = 30.0
-        // restrict the camera from going lower than y = 3.0
+        // restrict the camera from going higher than y = 30.0 and lower than y = 3.0
+        // restrict the camera from going farther than the range -30 to 30 in the x and z axes
         if (cameraPos.y > 30.0f) { 
             cameraPos.y = 30.0f;
         } 
         if (cameraPos.y < 3.0f) { 
             cameraPos.y = 3.0f;
+        }
+        if (cameraPos.x > 30.0f) { 
+            cameraPos.x = 30.0f;
+        }
+        if (cameraPos.x < -30.0f) { 
+            cameraPos.x = -30.0f;
+        }
+        if (cameraPos.z > 30.0f) { 
+            cameraPos.z = 30.0f;
+        }
+        if (cameraPos.z < -30.0f) { 
+            cameraPos.z = -30.0f;
         }
     }
     if (glfwGetKey(pWindow, GLFW_KEY_S) == GLFW_PRESS){
         cameraPos -= cameraSpeed * cameraFront;
-        // restrict the camera from going higher than y = 30.0
-        // restrict the camera from going lower than y = 3.0
+        // restrict the camera from going higher than y = 30.0 and lower than y = 3.0
+        // restrict the camera from going farther than the range -30 to 30 in the x and z axes
         if (cameraPos.y > 30.0f) { 
             cameraPos.y = 30.0f;
         } 
         if (cameraPos.y < 3.0f) { 
             cameraPos.y = 3.0f;
         }
+        if (cameraPos.x > 30.0f) { 
+            cameraPos.x = 30.0f;
+        }
+        if (cameraPos.x < -30.0f) { 
+            cameraPos.x = -30.0f;
+        }
+        if (cameraPos.z > 30.0f) { 
+            cameraPos.z = 30.0f;
+        }
+        if (cameraPos.z < -30.0f) { 
+            cameraPos.z = -30.0f;
+        }
     }
-    if (glfwGetKey(pWindow, GLFW_KEY_A) == GLFW_PRESS)
+    if (glfwGetKey(pWindow, GLFW_KEY_A) == GLFW_PRESS){
         cameraPos -= glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
-    if (glfwGetKey(pWindow, GLFW_KEY_D) == GLFW_PRESS)
+        // restrict the camera from going higher than y = 30.0 and lower than y = 3.0
+        // restrict the camera from going farther than the range -30 to 30 in the x and z axes
+        if (cameraPos.y > 30.0f) { 
+            cameraPos.y = 30.0f;
+        } 
+        if (cameraPos.y < 3.0f) { 
+            cameraPos.y = 3.0f;
+        }
+        if (cameraPos.x > 30.0f) { 
+            cameraPos.x = 30.0f;
+        }
+        if (cameraPos.x < -30.0f) { 
+            cameraPos.x = -30.0f;
+        }
+        if (cameraPos.z > 30.0f) { 
+            cameraPos.z = 30.0f;
+        }
+        if (cameraPos.z < -30.0f) { 
+            cameraPos.z = -30.0f;
+        }
+    }
+    if (glfwGetKey(pWindow, GLFW_KEY_D) == GLFW_PRESS){
         cameraPos += glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
+        // restrict the camera from going higher than y = 30.0 and lower than y = 3.0
+        // restrict the camera from going farther than the range -30 to 30 in the x and z axes
+        if (cameraPos.y > 30.0f) { 
+            cameraPos.y = 30.0f;
+        } 
+        if (cameraPos.y < 3.0f) { 
+            cameraPos.y = 3.0f;
+        }
+        if (cameraPos.x > 30.0f) { 
+            cameraPos.x = 30.0f;
+        }
+        if (cameraPos.x < -30.0f) { 
+            cameraPos.x = -30.0f;
+        }
+        if (cameraPos.z > 30.0f) { 
+            cameraPos.z = 30.0f;
+        }
+        if (cameraPos.z < -30.0f) { 
+            cameraPos.z = -30.0f;
+        }
+    }
     if (glfwGetKey(pWindow, GLFW_KEY_E) == GLFW_PRESS) {
         cameraPos += cameraSpeed * cameraUp;
     // restrict the camera from going higher than y = 30.0
