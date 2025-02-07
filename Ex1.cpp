@@ -16,7 +16,7 @@
 // change this to your desired window attributes
 #define WINDOW_WIDTH  1600
 #define WINDOW_HEIGHT 900
-#define WINDOW_TITLE  "Hello Transform (use WASDQE and arrow keys; 1 and 2 to select object)"
+#define WINDOW_TITLE  "Ex1 - V.M.R. - Sonic Chess"
 #define PI 3.14159265358979323846
 GLFWwindow *pWindow;
 float fov   =  75.0f;
@@ -21187,24 +21187,24 @@ bool setup()
     glEnableVertexAttribArray(3);
 
     // load our shader program
-    shader = gdevLoadShader("demo4.vs", "demo4.fs");
+    shader = gdevLoadShader("Ex1.vs", "Ex1.fs");
     if (! shader)
         return false;
 
     // load our texture
-    tailsTex = gdevLoadTexture("TailsTexture.png", GL_REPEAT, true, true);
+    tailsTex = gdevLoadTexture("TextureTails.png", GL_REPEAT, true, true);
     if (! tailsTex)
         return false;
 
-    chessTex = gdevLoadTexture("ChessTexture.png", GL_REPEAT, true, true);
+    chessTex = gdevLoadTexture("TextureChessboard.png", GL_REPEAT, true, true);
     if (! chessTex)
         return false;
 
-    sonicTex = gdevLoadTexture("SonicTexture.png", GL_REPEAT, true, true);
+    sonicTex = gdevLoadTexture("TextureSonic.png", GL_REPEAT, true, true);
     if (! sonicTex)
         return false;
 
-    knucklesTex = gdevLoadTexture("KnucklesTexture.png", GL_REPEAT, true, true);
+    knucklesTex = gdevLoadTexture("TextureKnuckles.png", GL_REPEAT, true, true);
     if (! knucklesTex)
         return false;
 

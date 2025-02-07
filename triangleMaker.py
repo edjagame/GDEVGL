@@ -10,8 +10,8 @@ vertices = []
 normals = []
 tex_coords = []
 indices = []
-inputFile = "TailsTextured.obj"
-outputFile = "tailsVerts.txt"
+inputFile = " " #replace with 'FileName.obj'
+outputFile = "output.txt"
 
 with open(inputFile, 'r') as obj_file:
     for line in obj_file:
