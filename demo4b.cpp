@@ -21234,19 +21234,48 @@ void render()
     float cameraSpeed = deltaTime * 20;
     previousTime = currentTime;
     
+    
     //MOVEMENT CONTROLS
-    if (glfwGetKey(pWindow, GLFW_KEY_W) == GLFW_PRESS)
+    if (glfwGetKey(pWindow, GLFW_KEY_W) == GLFW_PRESS){
         cameraPos += cameraSpeed * cameraFront;
-    if (glfwGetKey(pWindow, GLFW_KEY_S) == GLFW_PRESS)
+        // restrict the camera from going higher than y = 30.0
+        // restrict the camera from going lower than y = 3.0
+        if (cameraPos.y > 30.0f) { 
+            cameraPos.y = 30.0f;
+        } 
+        if (cameraPos.y < 3.0f) { 
+            cameraPos.y = 3.0f;
+        }
+    }
+    if (glfwGetKey(pWindow, GLFW_KEY_S) == GLFW_PRESS){
         cameraPos -= cameraSpeed * cameraFront;
+        // restrict the camera from going higher than y = 30.0
+        // restrict the camera from going lower than y = 3.0
+        if (cameraPos.y > 30.0f) { 
+            cameraPos.y = 30.0f;
+        } 
+        if (cameraPos.y < 3.0f) { 
+            cameraPos.y = 3.0f;
+        }
+    }
     if (glfwGetKey(pWindow, GLFW_KEY_A) == GLFW_PRESS)
         cameraPos -= glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
     if (glfwGetKey(pWindow, GLFW_KEY_D) == GLFW_PRESS)
         cameraPos += glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
-    if (glfwGetKey(pWindow, GLFW_KEY_E) == GLFW_PRESS) 
+    if (glfwGetKey(pWindow, GLFW_KEY_E) == GLFW_PRESS) {
         cameraPos += cameraSpeed * cameraUp;
-    if (glfwGetKey(pWindow, GLFW_KEY_Q) == GLFW_PRESS) 
+    // restrict the camera from going higher than y = 30.0
+        if (cameraPos.y > 30.0f) { 
+            cameraPos.y = 30.0f;
+        }
+    }    
+    if (glfwGetKey(pWindow, GLFW_KEY_Q) == GLFW_PRESS) {
         cameraPos -= cameraSpeed * cameraUp;
+        // restrict the camera from going lower than y = 3.0
+        if (cameraPos.y < 3.0f) { 
+            cameraPos.y = 3.0f;
+        }
+    }
 
     // clear the whole frame
     glClearColor(0.0f, 0.3f, 0.3f, 1.0f);
