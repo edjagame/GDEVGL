@@ -21112,6 +21112,7 @@ bool setup()
     glEnableVertexAttribArray(1);
     glEnableVertexAttribArray(2);
     glEnableVertexAttribArray(3);
+    glEnableVertexAttribArray(4);
 
     // upload the KNUCKLES model to the GPU (explanations omitted for brevity)
     glGenVertexArrays(1, &knucklesVAO);

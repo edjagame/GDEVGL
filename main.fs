@@ -102,7 +102,7 @@ void main()
     spotLight.position = shaderSpotLightPosition;
     spotLight.color = spotLightColor;
     spotLight.direction = normalize(shaderSpotLightDirection);
-    spotLight.cutoff = 0;
+    spotLight.cutoff = spotLightCutoff;
 
     spotLight.constant = 0.5f;
     spotLight.linear = 0.014f;
@@ -129,10 +129,6 @@ void main()
         spotLight.specular = vec3(0.0f);
     }
 
-
-    pointLight.ambient = vec3(0.0f);
-    pointLight.diffuse = vec3(0.0f);
-    pointLight.specular = vec3(0.0f);
     // Final fragment color
     float d = length(shaderPosition - pointLight.position);
     float pointLightAttenuation = 1.0 / (pointLight.constant + pointLight.linear * d + pointLight.quadratic * (d * d));
