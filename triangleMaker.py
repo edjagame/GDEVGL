@@ -9,9 +9,9 @@ class FaceIndex:
 vertices = []
 normals = []
 tex_coords = []
-indices = []
-inputFile = "TailsTextured.obj"
-outputFile = "tailsVerts.txt"
+indices = [] 
+inputFile = "ChessTextured.obj"
+outputFile = "chessVerts.txt"
 
 with open(inputFile, 'r') as obj_file:
     for line in obj_file:
@@ -63,7 +63,26 @@ for k,v in vertex_smooth.items():
 
 rgba = ["1.0", "1.0", "1.0", "1.0"]
 format = "f,\t"
-numTriangles = len(indices) -1
+numTriangles = len(indices) - 1
+
+
+def calculate_tangent(triangle):
+    
+    edge1 = np.subtract(vertices[triangle[1].pos], vertices[triangle[0].pos])
+    edge2 = np.subtract(vertices[triangle[2].pos], vertices[triangle[0].pos])
+    deltaUV1 = np.subtract(tex_coords[triangle[1].tex], tex_coords[triangle[0].tex])
+    deltaUV2 = np.subtract(tex_coords[triangle[2].tex], tex_coords[triangle[0].tex])
+
+    f = 1.0 / (deltaUV1[0] * deltaUV2[1] - deltaUV2[0] * deltaUV1[1])
+    tangent = [0, 0, 0]
+    tangent[0] = f * (deltaUV2[1] * edge1[0] - deltaUV1[1] * edge2[0])
+    tangent[1] = f * (deltaUV2[1] * edge1[1] - deltaUV1[1] * edge2[1])
+    tangent[2] = f * (deltaUV2[1] * edge1[2] - deltaUV1[1] * edge2[2])
+
+    tangent = np.array(tangent)
+    tangent = tangent / np.linalg.norm(tangent)
+    
+    return tangent
 
 with open(outputFile, "w") as vertexFile:
     #indices[] contains N Triangles
@@ -71,8 +90,10 @@ with open(outputFile, "w") as vertexFile:
     for triangleNum, triangle in enumerate(indices):
         vertexFile.write(f"//Triangle #{triangleNum}\n")
 
-        for t in triangle:
+        #Calculate Tangent
+        tangent = calculate_tangent(triangle)
 
+        for t in triangle:
             pos = vertices[t.pos]
             if t.pos in smooth_normal:
                 norm = smooth_normal[t.pos]
@@ -102,12 +123,17 @@ with open(outputFile, "w") as vertexFile:
                 vertexFile.write(f"{i:.6f}" + format)
             vertexFile.write(f"\t")
 
+            for i in tangent:
+                vertexFile.write(f"{i:.6f}" + format)
             # #tex coords
             # vertexFile.write(f"1,")
             # vertexFile.write(f"\t")
 
             #end of file
             vertexFile.write(f"\n")
+            
         vertexFile.write(f"\n")
+
+
 
         print(f"Triangle {triangleNum} out of {numTriangles}")
