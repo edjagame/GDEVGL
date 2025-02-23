@@ -1,8 +1,40 @@
 /******************************************************************************
- * This is a minor modification of demo4.cpp that draws two instances of the
- * quadrilateral. (This uses the same support files as demo4.cpp.)
+ * CONTROLS
+ * 
+ * N -> Toggle normal map
+ * 
+ * CAMERA MANIPULATION (RELATIVE TO CAMERA SPACE)
+ * W -> Move forward
+ * S -> Move backward
+ * A -> Move left
+ * D -> Move right
+ * Q -> Move up
+ * E -> Move down
+ * Mouse - rotation
+ * 
  *
- * Happy hacking! - eric
+ * M -> Toggle between the light sources
+ * 
+ * LIGHT MOVEMENT (RELATIVE TO WORLD SPACE)
+ * J -> Move in the negative x direction
+ * L -> Move in the positive x direction
+ * I -> Move in the positive z direction
+ * K -> Move in the negative z direction
+ * U -> Move in the positive y direction
+ * O -> Move in the negative y direction
+ * 
+ * LIGHT ROTATION
+ * LEFT and RIGHT arrow keys -> controls the YAW
+ * UP and DOWN arrow keys -> controls the PITCH (Pitch is relative to the yaw angle)
+ * 
+ * LIGHT ATTENUATION
+ * MINUS -> increase attenuation (goes dark faster)
+ * PLUS -> decrease attenuation (goes dark slower)
+ * 
+ * SPOTLIGHT RADIUS
+ * [ and ] -> decrease or increase the spotlight outer radius
+ * Shift + [ and Shift + ] -> decrease or increase the spotlight inner radius
+ * 
  *****************************************************************************/
 
 #include <iostream>
@@ -21023,11 +21055,6 @@ modelInstance chessInstances[1];
 int current = 0;
 double previousTime = 0.0;
 
-// Set up the initial camera vectors
-glm::vec3 cameraPos   = glm::vec3(0.0f, 10.0f, 40.0f);
-glm::vec3 cameraFront = glm::vec3(0.0f, -1.0f, -3.0f);
-glm::vec3 cameraUp    = glm::vec3(0.0f, 1.0f, 0.0f);
-
 void setVAO(GLuint &VAO, GLuint &VBO, const float* vertices, size_t size) {
     glGenVertexArrays(1, &VAO);
     glGenBuffers(1, &VBO);
@@ -21072,16 +21099,14 @@ bool setup()
         return false;
     
     glUseProgram(shader);
-    glUniform1i(glGetUniformLocation(shader, "diffuseMap"), 0);
-    glUniform1i(glGetUniformLocation(shader, "normalMap"),  1);
 
     // load our texture
     tailsTex[0] = gdevLoadTexture("TailsTexture.png", GL_REPEAT, true, true);
-    if (! tailsTex)
+    if (! tailsTex[0])
         return false;
     
     tailsTex[1] = gdevLoadTexture("TailsNormalMap.png", GL_REPEAT, true, true);
-    if (! tailsTex)
+    if (! tailsTex[1])
         return false;
 
     chessTex[0] = gdevLoadTexture("ChessTexture.png", GL_REPEAT, true, true);
@@ -21101,6 +21126,9 @@ bool setup()
         return false;
 
     
+    glUniform1i(glGetUniformLocation(shader, "diffuseMap"), 0);
+    glUniform1i(glGetUniformLocation(shader, "normalMap"),  1);
+    //glUniform1i(glGetUniformLocation(shader, "specularMap"), 2);
 
     // enable OpenGL blending so that texels with alpha values less than one are drawn transparent
     // (you can omit these lines if you don't use alpha)
@@ -21115,127 +21143,179 @@ bool setup()
     return true;
 }
 
+
+
+// Set up the initial camera vectors
+glm::vec3 cameraPos   = glm::vec3(0.0f, 10.0f, 40.0f);
+glm::vec3 cameraFront = glm::vec3(0.0f, -1.0f, -3.0f);
+glm::vec3 cameraUp    = glm::vec3(0.0f, 1.0f, 0.0f);
+
+
+//LIGHTING VARIABLES
+struct lightInstance {
+    int type;
+    glm::vec3 position;
+    glm::vec3 color;
+    glm::vec3 attenuation;
+    glm::vec3 direction;
+    float innerCutoff;
+    float outerCutoff;
+    glm::vec3 up = glm::vec3(1.0f);
+};
+
+lightInstance pointLight = {
+    0,                              // Type
+    glm::vec3(30.0f, 70.0f, 30.0f), // Position
+    glm::vec3(1.0),                 // Color
+    glm::vec3(1.0, 0.014, 0.00014), // Attenuation
+    glm::vec3(1.0),                 // Direction
+    0,                              // Inner Cutoff
+    0                               // Outer Cutoff
+};
+
+lightInstance spotLight = {
+    1,                              // Type
+    glm::vec3(0.0f, 30.0f, 0.0f),   // Position
+    glm::vec3(1.0f),                // Color
+    glm::vec3(1.0, 0.014, 0.00014), // Attenuation
+    glm::vec3(0.0f, -0.99f, 0.0f),  // Direction
+    glm::cos(glm::radians(12.5f)),  // Inner Cutoff
+    glm::cos(glm::radians(17.5f)),  // Outer Cutoff
+};
+std::vector<lightInstance> lights = {pointLight, spotLight};
+
+bool useNormals = true;
+bool useNormalsPressed = false;
+int currentLight = 1;
+bool currentLightPressed = false;
+
+
+void movementControls(float deltaTime, std::vector<lightInstance> &lights) {
+
+    float cameraSpeed = deltaTime * 20;
+    
+    // Scene Bounds
+    const float MIN_Y = 3.0f;
+    const float MAX_Y = 40.0f;
+    const float MIN_XZ = -40.0f;
+    const float MAX_XZ = 40.0f;
+
+    // Move camera
+    if (glfwGetKey(pWindow, GLFW_KEY_W) == GLFW_PRESS) cameraPos += cameraSpeed * cameraFront;
+    if (glfwGetKey(pWindow, GLFW_KEY_S) == GLFW_PRESS) cameraPos -= cameraSpeed * cameraFront;
+    if (glfwGetKey(pWindow, GLFW_KEY_A) == GLFW_PRESS) cameraPos -= glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
+    if (glfwGetKey(pWindow, GLFW_KEY_D) == GLFW_PRESS) cameraPos += glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
+    if (glfwGetKey(pWindow, GLFW_KEY_E) == GLFW_PRESS) cameraPos += cameraSpeed * cameraUp;
+    if (glfwGetKey(pWindow, GLFW_KEY_Q) == GLFW_PRESS) cameraPos -= cameraSpeed * cameraUp;
+
+    cameraPos.y = glm::clamp(cameraPos.y, MIN_Y, MAX_Y);
+    cameraPos.x = glm::clamp(cameraPos.x, MIN_XZ, MAX_XZ);
+    cameraPos.z = glm::clamp(cameraPos.z, MIN_XZ, MAX_XZ);
+
+
+    //Toggle Normal Map Usage
+    if (glfwGetKey(pWindow, GLFW_KEY_N) == GLFW_PRESS && !useNormalsPressed){
+        useNormals = !useNormals;
+        useNormalsPressed = true;
+    }
+    if (glfwGetKey(pWindow, GLFW_KEY_N) == GLFW_RELEASE){
+        useNormalsPressed = false;
+    }
+
+    
+    //Toggle Light
+    if (glfwGetKey(pWindow, GLFW_KEY_M) == GLFW_PRESS && !currentLightPressed){
+        currentLight = (currentLight + 1) % lights.size();
+        currentLightPressed = true;
+    }
+    if (glfwGetKey(pWindow, GLFW_KEY_M) == GLFW_RELEASE){
+        currentLightPressed = false;
+    }
+
+    //Manipulate light parameters
+    float lightSpeed = 30.0f; //Not to be confused with the speed of light
+
+    //Light Position
+    if (glfwGetKey(pWindow, GLFW_KEY_J) == GLFW_PRESS) lights[currentLight].position.x -= lightSpeed * deltaTime;
+    if (glfwGetKey(pWindow, GLFW_KEY_L) == GLFW_PRESS) lights[currentLight].position.x += lightSpeed * deltaTime;
+    if (glfwGetKey(pWindow, GLFW_KEY_I) == GLFW_PRESS) lights[currentLight].position.z -= lightSpeed * deltaTime;
+    if (glfwGetKey(pWindow, GLFW_KEY_K) == GLFW_PRESS) lights[currentLight].position.z += lightSpeed * deltaTime;  
+    if (glfwGetKey(pWindow, GLFW_KEY_U) == GLFW_PRESS) lights[currentLight].position.y += lightSpeed * deltaTime;
+    if (glfwGetKey(pWindow, GLFW_KEY_O) == GLFW_PRESS) lights[currentLight].position.y -= lightSpeed * deltaTime;
+
+    const float LIGHT_MIN_Y = 3.0f;
+    const float LIGHT_MAX_Y = 100.0f;
+    const float LIGHT_MIN_XZ = -30.0f;
+    const float LIGHT_MAX_XZ = 30.0f;
+
+    lights[currentLight].position.y = glm::clamp(lights[currentLight].position.y, LIGHT_MIN_Y, LIGHT_MAX_Y);
+    lights[currentLight].position.x = glm::clamp(lights[currentLight].position.x, LIGHT_MIN_XZ, LIGHT_MAX_XZ);
+    lights[currentLight].position.z = glm::clamp(lights[currentLight].position.z, LIGHT_MIN_XZ, LIGHT_MAX_XZ);
+
+    //Light rotation (for spotlights)
+    float rotationSpeed = 100.0f;
+    if (lights[currentLight].type == 1){
+
+        if (glfwGetKey(pWindow, GLFW_KEY_LEFT) == GLFW_PRESS) {
+            glm::mat4 rotationMatrix = glm::rotate(glm::mat4(1.0f), glm::radians(rotationSpeed * deltaTime), glm::vec3(0.0f, 1.0f, 0.0f));
+            lights[currentLight].direction = glm::vec3(rotationMatrix * glm::vec4(lights[currentLight].direction, 0.0f));
+            lights[currentLight].up = glm::vec3(rotationMatrix * glm::vec4(lights[currentLight].up, 0.0f));
+        }
+        if (glfwGetKey(pWindow, GLFW_KEY_RIGHT) == GLFW_PRESS) {
+            glm::mat4 rotationMatrix = glm::rotate(glm::mat4(1.0f), glm::radians(-rotationSpeed * deltaTime), glm::vec3(0.0f, 1.0f, 0.0f));
+            lights[currentLight].direction = glm::vec3(rotationMatrix * glm::vec4(lights[currentLight].direction, 0.0f));
+            lights[currentLight].up = glm::vec3(rotationMatrix * glm::vec4(lights[currentLight].up, 0.0f));
+        }
+        
+        glm::vec3 pitchAxis = glm::normalize(glm::cross(lights[currentLight].direction, lights[currentLight].up));
+        if (glfwGetKey(pWindow, GLFW_KEY_UP) == GLFW_PRESS && lights[currentLight].direction.y <= -0.0001f) {
+            glm::mat4 rotationMatrix = glm::rotate(glm::mat4(1.0f), glm::radians(rotationSpeed * deltaTime), pitchAxis);
+            lights[currentLight].direction = glm::vec3(rotationMatrix * glm::vec4(lights[currentLight].direction, 0.0f));
+        }
+        if (glfwGetKey(pWindow, GLFW_KEY_DOWN) == GLFW_PRESS && lights[currentLight].direction.y >= -0.9999f) {
+            glm::mat4 rotationMatrix = glm::rotate(glm::mat4(1.0f), glm::radians(-rotationSpeed * deltaTime), pitchAxis);
+            lights[currentLight].direction = glm::vec3(rotationMatrix * glm::vec4(lights[currentLight].direction, 0.0f));
+        }
+
+        lights[currentLight].direction = glm::normalize(lights[currentLight].direction);
+
+        
+
+        if (!(glfwGetKey(pWindow, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) && glfwGetKey(pWindow, GLFW_KEY_LEFT_BRACKET) == GLFW_PRESS) lights[currentLight].outerCutoff += 0.001f;
+        if (!(glfwGetKey(pWindow, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) && glfwGetKey(pWindow, GLFW_KEY_RIGHT_BRACKET) == GLFW_PRESS) lights[currentLight].outerCutoff -= 0.001f;
+        if (glfwGetKey(pWindow, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS && glfwGetKey(pWindow, GLFW_KEY_LEFT_BRACKET) == GLFW_PRESS) lights[currentLight].innerCutoff += 0.01f;
+        if (glfwGetKey(pWindow, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS && glfwGetKey(pWindow, GLFW_KEY_RIGHT_BRACKET) == GLFW_PRESS) lights[currentLight].innerCutoff -= 0.01f;
+        lights[currentLight].innerCutoff = glm::clamp(lights[currentLight].innerCutoff, lights[currentLight].outerCutoff, 0.99f);
+        lights[currentLight].outerCutoff = glm::clamp(lights[currentLight].outerCutoff, 0.01f, lights[currentLight].innerCutoff);
+
+        if (glfwGetKey(pWindow, GLFW_KEY_EQUAL) == GLFW_PRESS) {
+            lights[currentLight].attenuation.y += 0.01f * deltaTime;
+        }
+        if (glfwGetKey(pWindow, GLFW_KEY_MINUS) == GLFW_PRESS) {
+            lights[currentLight].attenuation.y -= 0.01f * deltaTime;
+        }
+        
+        lights[currentLight].attenuation.y = glm::clamp(lights[currentLight].attenuation.y, lights[currentLight].attenuation.z, lights[currentLight].attenuation.x);
+    }
+}
+
+
 // called by the main function to do rendering per frame
 void render()
 {
+
     // randomizes the random seed
     srand(glfwGetTime()*1000);
 
     // find the elapsed time since the last frame
     double currentTime = glfwGetTime();
     double deltaTime = currentTime - previousTime;
-    float cameraSpeed = deltaTime * 20;
     previousTime = currentTime;
     
-    
-    //MOVEMENT CONTROLS
-    if (glfwGetKey(pWindow, GLFW_KEY_W) == GLFW_PRESS){
-        cameraPos += cameraSpeed * cameraFront;
-        // restrict the camera from going higher than y = 30.0 and lower than y = 3.0
-        // restrict the camera from going farther than the range -30 to 30 in the x and z axes
-        if (cameraPos.y > 30.0f) { 
-            cameraPos.y = 30.0f;
-        } 
-        if (cameraPos.y < 3.0f) { 
-            cameraPos.y = 3.0f;
-        }
-        if (cameraPos.x > 30.0f) { 
-            cameraPos.x = 30.0f;
-        }
-        if (cameraPos.x < -30.0f) { 
-            cameraPos.x = -30.0f;
-        }
-        if (cameraPos.z > 30.0f) { 
-            cameraPos.z = 30.0f;
-        }
-        if (cameraPos.z < -30.0f) { 
-            cameraPos.z = -30.0f;
-        }
-    }
-    if (glfwGetKey(pWindow, GLFW_KEY_S) == GLFW_PRESS){
-        cameraPos -= cameraSpeed * cameraFront;
-        // restrict the camera from going higher than y = 30.0 and lower than y = 3.0
-        // restrict the camera from going farther than the range -30 to 30 in the x and z axes
-        if (cameraPos.y > 30.0f) { 
-            cameraPos.y = 30.0f;
-        } 
-        if (cameraPos.y < 3.0f) { 
-            cameraPos.y = 3.0f;
-        }
-        if (cameraPos.x > 30.0f) { 
-            cameraPos.x = 30.0f;
-        }
-        if (cameraPos.x < -30.0f) { 
-            cameraPos.x = -30.0f;
-        }
-        if (cameraPos.z > 30.0f) { 
-            cameraPos.z = 30.0f;
-        }
-        if (cameraPos.z < -30.0f) { 
-            cameraPos.z = -30.0f;
-        }
-    }
-    if (glfwGetKey(pWindow, GLFW_KEY_A) == GLFW_PRESS){
-        cameraPos -= glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
-        // restrict the camera from going higher than y = 30.0 and lower than y = 3.0
-        // restrict the camera from going farther than the range -30 to 30 in the x and z axes
-        if (cameraPos.y > 30.0f) { 
-            cameraPos.y = 30.0f;
-        } 
-        if (cameraPos.y < 3.0f) { 
-            cameraPos.y = 3.0f;
-        }
-        if (cameraPos.x > 30.0f) { 
-            cameraPos.x = 30.0f;
-        }
-        if (cameraPos.x < -30.0f) { 
-            cameraPos.x = -30.0f;
-        }
-        if (cameraPos.z > 30.0f) { 
-            cameraPos.z = 30.0f;
-        }
-        if (cameraPos.z < -30.0f) { 
-            cameraPos.z = -30.0f;
-        }
-    }
-    if (glfwGetKey(pWindow, GLFW_KEY_D) == GLFW_PRESS){
-        cameraPos += glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
-        // restrict the camera from going higher than y = 30.0 and lower than y = 3.0
-        // restrict the camera from going farther than the range -30 to 30 in the x and z axes
-        if (cameraPos.y > 30.0f) { 
-            cameraPos.y = 30.0f;
-        } 
-        if (cameraPos.y < 3.0f) { 
-            cameraPos.y = 3.0f;
-        }
-        if (cameraPos.x > 30.0f) { 
-            cameraPos.x = 30.0f;
-        }
-        if (cameraPos.x < -30.0f) { 
-            cameraPos.x = -30.0f;
-        }
-        if (cameraPos.z > 30.0f) { 
-            cameraPos.z = 30.0f;
-        }
-        if (cameraPos.z < -30.0f) { 
-            cameraPos.z = -30.0f;
-        }
-    }
-    if (glfwGetKey(pWindow, GLFW_KEY_E) == GLFW_PRESS) {
-        cameraPos += cameraSpeed * cameraUp;
-    // restrict the camera from going higher than y = 30.0
-        if (cameraPos.y > 30.0f) { 
-            cameraPos.y = 30.0f;
-        }
-    }    
-    if (glfwGetKey(pWindow, GLFW_KEY_Q) == GLFW_PRESS) {
-        cameraPos -= cameraSpeed * cameraUp;
-        // restrict the camera from going lower than y = 3.0
-        if (cameraPos.y < 3.0f) { 
-            cameraPos.y = 3.0f;
-        }
-    }
+    movementControls(deltaTime, lights);
 
+    glUniform1i(glGetUniformLocation(shader, "useNormals"), useNormals);
+    
     // clear the whole frame
     glClearColor(0.0f, 0.0f, 0.05f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -21261,20 +21341,6 @@ void render()
     glUniformMatrix4fv(glGetUniformLocation(shader, "viewTransform"),
                        1, GL_FALSE, glm::value_ptr(viewTransform));
 
-
-    //LIGHTING VARIABLES
-    
-    glm::vec3 pointLightPos = glm::vec3(0, 100.0f, 0);
-    glm::vec3 pointLightColor = glm::vec3(1.0, 1.0, 1.0);
-
-    // glm::vec3 spotLightPos = glm::vec3(tailsInstances[0].x, 30.0f, tailsInstances[0].z);
-    // glm::vec3 spotLightDir =  glm::normalize(glm::vec3(0.0f, -1.0f, 0.0f));
-    glm::vec3 spotLightPos = cameraPos;
-    glm::vec3 spotLightDir = cameraFront;
-
-    glm::vec3 spotLightColor = glm::vec3(1.0f, 1.0f, 1.0f);
-    float spotLightInnerCutoff = glm::cos(glm::radians(12.5f));
-    float spotLightOuterCutoff = glm::cos(glm::radians(17.5f));
 
 
     // Tails Matrix Transformations
@@ -21388,7 +21454,6 @@ void render()
         glBindVertexArray(tailsVAO);
         glDrawArrays(GL_TRIANGLES, 0, sizeof(tailsVertices) / (8 * sizeof(float)));
     }
-
 
 
     // Sonic Matrix Transformations
@@ -21681,13 +21746,15 @@ void render()
     
     
     //LIGHTING UNIFORMS
-    glUniform3fv(glGetUniformLocation(shader, "pointLightPos"), 1, glm::value_ptr(pointLightPos));
-    glUniform3fv(glGetUniformLocation(shader, "pointLightColor"), 1, glm::value_ptr(pointLightColor));
-    glUniform3fv(glGetUniformLocation(shader, "spotLightPos"), 1, glm::value_ptr(spotLightPos));
-    glUniform3fv(glGetUniformLocation(shader, "spotLightColor"), 1, glm::value_ptr(spotLightColor));
-    glUniform3fv(glGetUniformLocation(shader, "spotLightDir"), 1, glm::value_ptr(spotLightDir));
-    glUniform1f(glGetUniformLocation(shader, "spotLightInnerCutoff"), spotLightInnerCutoff);
-    glUniform1f(glGetUniformLocation(shader, "spotLightOuterCutoff"), spotLightOuterCutoff);
+    glUniform3fv(glGetUniformLocation(shader, "pointLightPos"), 1, glm::value_ptr(lights[0].position));
+    glUniform3fv(glGetUniformLocation(shader, "pointLightColor"), 1, glm::value_ptr(lights[0].color));
+    glUniform3fv(glGetUniformLocation(shader, "pointLightAttenuation"), 1, glm::value_ptr(lights[0].attenuation));
+    glUniform3fv(glGetUniformLocation(shader, "spotLightPos"), 1, glm::value_ptr(lights[1].position));
+    glUniform3fv(glGetUniformLocation(shader, "spotLightColor"), 1, glm::value_ptr(lights[1].color));
+    glUniform3fv(glGetUniformLocation(shader, "spotLightDir"), 1, glm::value_ptr(lights[1].direction));
+    glUniform3fv(glGetUniformLocation(shader, "spotLightAttenuation"), 1, glm::value_ptr(lights[1].attenuation));
+    glUniform1f(glGetUniformLocation(shader, "spotLightInnerCutoff"), lights[1].innerCutoff);
+    glUniform1f(glGetUniformLocation(shader, "spotLightOuterCutoff"), lights[1].outerCutoff);
     glUniform3fv(glGetUniformLocation(shader, "eyePosition"), 1, glm::value_ptr(cameraPos));
 
     
