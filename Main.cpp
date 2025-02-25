@@ -21141,7 +21141,6 @@
  }
  
  
- 
  // Set up the initial camera vectors
  glm::vec3 cameraPos   = glm::vec3(0.0f, 10.0f, 40.0f);
  glm::vec3 cameraFront = glm::vec3(0.0f, -1.0f, -3.0f);
