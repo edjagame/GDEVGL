@@ -21101,7 +21101,7 @@
      // load our texture
      tailsTex[0] = gdevLoadTexture("TailsTexture.png", GL_REPEAT, true, true);
      tailsTex[1] = gdevLoadTexture("TailsNormalMap.png", GL_REPEAT, true, true);
-     tailsTex[2] = gdevLoadTexture("ChessSpecularMap.png", GL_REPEAT, true, true);
+     tailsTex[2] = gdevLoadTexture("TailsSpecularMap.png", GL_REPEAT, true, true);
      if (! tailsTex[0] || ! tailsTex[1] || ! tailsTex[2])
          return false;
  
@@ -21185,9 +21185,25 @@
  bool useNormalsPressed = false;
  int currentLight = 1;
  bool currentLightPressed = false;
- bool makeFlashlight = true;
+ bool makeFlashlight = false;
  bool makeFlashlightPressed = false;
- 
+ bool keyJPressed = false;
+ bool keyLPressed = false;
+ bool keyIPressed = false;
+ bool keyKPressed = false;
+ bool keyUPressed = false;
+ bool keyOPressed = false;
+ bool keyLeftPressed = false;
+ bool keyRightPressed = false;
+ bool keyUpPressed = false;
+ bool keyDownPressed = false;
+ bool keyMinusPressed = false;
+ bool keyPlusPressed = false;
+ bool keyLeftBracketPressed = false;
+ bool keyRightBracketPressed = false;
+ bool keyShiftLeftBracketPressed = false;
+ bool keyShiftRightBracketPressed = false;
+
  void movementControls(float deltaTime, std::vector<lightInstance> &lights) {
  
      float cameraSpeed = deltaTime * 20;
@@ -21215,6 +21231,12 @@
      if (glfwGetKey(pWindow, GLFW_KEY_N) == GLFW_PRESS && !useNormalsPressed){
          useNormals = !useNormals;
          useNormalsPressed = true;
+         if(useNormals){
+            std::cout << "Toggle Normal Map On\n";
+         }
+        else {
+            std::cout << "Toggle Normal Map Off\n";
+        } 
      }
      if (glfwGetKey(pWindow, GLFW_KEY_N) == GLFW_RELEASE){
          useNormalsPressed = false;
@@ -21225,21 +21247,82 @@
      if (glfwGetKey(pWindow, GLFW_KEY_M) == GLFW_PRESS && !currentLightPressed){
          currentLight = (currentLight + 1) % lights.size();
          currentLightPressed = true;
+         if(currentLight == 0){
+            std::cout << "Toggle Point Light\n";
+         }
+         else {
+            std::cout << "Toggle Spot Light\n";
+         }
      }
      if (glfwGetKey(pWindow, GLFW_KEY_M) == GLFW_RELEASE){
          currentLightPressed = false;
      }
- 
+
      //Manipulate light parameters
      float lightSpeed = 30.0f; //Not to be confused with the speed of light
- 
+
      //Light Position
-     if (glfwGetKey(pWindow, GLFW_KEY_J) == GLFW_PRESS) lights[currentLight].position.x -= lightSpeed * deltaTime;
-     if (glfwGetKey(pWindow, GLFW_KEY_L) == GLFW_PRESS) lights[currentLight].position.x += lightSpeed * deltaTime;
-     if (glfwGetKey(pWindow, GLFW_KEY_I) == GLFW_PRESS) lights[currentLight].position.z -= lightSpeed * deltaTime;
-     if (glfwGetKey(pWindow, GLFW_KEY_K) == GLFW_PRESS) lights[currentLight].position.z += lightSpeed * deltaTime;  
-     if (glfwGetKey(pWindow, GLFW_KEY_U) == GLFW_PRESS) lights[currentLight].position.y += lightSpeed * deltaTime;
-     if (glfwGetKey(pWindow, GLFW_KEY_O) == GLFW_PRESS) lights[currentLight].position.y -= lightSpeed * deltaTime;
+
+     if (glfwGetKey(pWindow, GLFW_KEY_J) == GLFW_PRESS) {
+        lights[currentLight].position.x -= lightSpeed * deltaTime;
+        if (!keyJPressed) {
+            std::cout << "Move Selected Light Source in the Negative X Direction\n"; 
+            keyJPressed = true;
+        }
+     }
+     if (glfwGetKey(pWindow, GLFW_KEY_J) == GLFW_RELEASE) {
+        keyJPressed = false;
+     }
+     if (glfwGetKey(pWindow, GLFW_KEY_L) == GLFW_PRESS) {
+        lights[currentLight].position.x += lightSpeed * deltaTime;
+        if (!keyLPressed) {
+            std::cout << "Move Selected Light Source in the Positive X Direction\n"; 
+            keyLPressed = true;
+        }
+     }
+     if (glfwGetKey(pWindow, GLFW_KEY_L) == GLFW_RELEASE) {
+        keyLPressed = false;
+     }
+     if (glfwGetKey(pWindow, GLFW_KEY_I) == GLFW_PRESS) {
+        lights[currentLight].position.z -= lightSpeed * deltaTime;
+        if (!keyIPressed) {
+            std::cout << "Move Selected Light Source in the Positive Z Direction\n"; 
+            keyIPressed = true;
+        }
+     }
+     if (glfwGetKey(pWindow, GLFW_KEY_I) == GLFW_RELEASE) {
+        keyIPressed = false;
+     }
+     if (glfwGetKey(pWindow, GLFW_KEY_K) == GLFW_PRESS) {
+        lights[currentLight].position.z += lightSpeed * deltaTime;
+        if (!keyKPressed) {
+            std::cout << "Move Selected Light Source in the Negative Z Direction\n"; 
+            keyKPressed = true;
+        }
+     }
+     if (glfwGetKey(pWindow, GLFW_KEY_K) == GLFW_RELEASE) {
+        keyKPressed = false;
+     }
+     if (glfwGetKey(pWindow, GLFW_KEY_U) == GLFW_PRESS) {
+        lights[currentLight].position.y += lightSpeed * deltaTime;
+        if (!keyUPressed) {
+            std::cout << "Move Selected Light Source in the Positive Y Direction\n"; 
+            keyUPressed = true;
+        }
+     }
+     if (glfwGetKey(pWindow, GLFW_KEY_U) == GLFW_RELEASE) {
+        keyUPressed = false;
+     }
+     if (glfwGetKey(pWindow, GLFW_KEY_O) == GLFW_PRESS) {
+        lights[currentLight].position.y -= lightSpeed * deltaTime;
+        if (!keyOPressed) {
+            std::cout << "Move Selected Light Source in the Negative Y Direction\n"; 
+            keyOPressed = true;
+        }
+     }
+     if (glfwGetKey(pWindow, GLFW_KEY_O) == GLFW_RELEASE) {
+        keyOPressed = false;
+     }
  
      const float LIGHT_MIN_Y = 3.0f;
      const float LIGHT_MAX_Y = 100.0f;
@@ -21258,39 +21341,116 @@
              glm::mat4 rotationMatrix = glm::rotate(glm::mat4(1.0f), glm::radians(rotationSpeed * deltaTime), glm::vec3(0.0f, 1.0f, 0.0f));
              lights[currentLight].direction = glm::vec3(rotationMatrix * glm::vec4(lights[currentLight].direction, 0.0f));
              lights[currentLight].up = glm::vec3(rotationMatrix * glm::vec4(lights[currentLight].up, 0.0f));
+             if (!keyLeftPressed) {
+                std::cout << "Rotate Selected Light Source along the Yaw (Counterclockwise from above)\n";
+                keyLeftPressed = true;
+             }
+         }
+         if (glfwGetKey(pWindow, GLFW_KEY_LEFT) == GLFW_RELEASE) {
+            keyLeftPressed = false;
          }
          if (glfwGetKey(pWindow, GLFW_KEY_RIGHT) == GLFW_PRESS) {
              glm::mat4 rotationMatrix = glm::rotate(glm::mat4(1.0f), glm::radians(-rotationSpeed * deltaTime), glm::vec3(0.0f, 1.0f, 0.0f));
              lights[currentLight].direction = glm::vec3(rotationMatrix * glm::vec4(lights[currentLight].direction, 0.0f));
              lights[currentLight].up = glm::vec3(rotationMatrix * glm::vec4(lights[currentLight].up, 0.0f));
+             if (!keyRightPressed) {
+                std::cout << "Rotate Selected Light Source along the Yaw (Clockwise from above)\n";
+                keyRightPressed = true;
+             }
+         }
+         if (glfwGetKey(pWindow, GLFW_KEY_RIGHT) == GLFW_RELEASE) {
+            keyRightPressed = false;
          }
          
          glm::vec3 pitchAxis = glm::normalize(glm::cross(lights[currentLight].direction, lights[currentLight].up));
          if (glfwGetKey(pWindow, GLFW_KEY_UP) == GLFW_PRESS && lights[currentLight].direction.y <= -0.0001f) {
              glm::mat4 rotationMatrix = glm::rotate(glm::mat4(1.0f), glm::radians(rotationSpeed * deltaTime), pitchAxis);
              lights[currentLight].direction = glm::vec3(rotationMatrix * glm::vec4(lights[currentLight].direction, 0.0f));
+             if (!keyUpPressed) {
+                std::cout << "Rotate Selected Light Source along the Pitch in Positive direction\n";
+                keyUpPressed = true;
+             }
+         }
+         if (glfwGetKey(pWindow, GLFW_KEY_UP) == GLFW_RELEASE) {
+            keyUpPressed = false;
          }
          if (glfwGetKey(pWindow, GLFW_KEY_DOWN) == GLFW_PRESS && lights[currentLight].direction.y >= -0.9999f) {
              glm::mat4 rotationMatrix = glm::rotate(glm::mat4(1.0f), glm::radians(-rotationSpeed * deltaTime), pitchAxis);
              lights[currentLight].direction = glm::vec3(rotationMatrix * glm::vec4(lights[currentLight].direction, 0.0f));
+             if (!keyDownPressed) {
+                std::cout << "Rotate Selected Light Source along the Pitch in Negative direction\n";
+                keyDownPressed = true;
+             }
+         }
+         if (glfwGetKey(pWindow, GLFW_KEY_DOWN) == GLFW_RELEASE) {
+            keyDownPressed = false;
          }
  
-         lights[currentLight].direction = glm::normalize(lights[currentLight].direction);
+         lights[currentLight].direction = glm::normalize(lights[currentLight].direction);  
  
-         
- 
-         if (!(glfwGetKey(pWindow, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) && glfwGetKey(pWindow, GLFW_KEY_LEFT_BRACKET) == GLFW_PRESS) lights[currentLight].outerCutoff += 0.001f;
-         if (!(glfwGetKey(pWindow, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) && glfwGetKey(pWindow, GLFW_KEY_RIGHT_BRACKET) == GLFW_PRESS) lights[currentLight].outerCutoff -= 0.001f;
-         if (glfwGetKey(pWindow, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS && glfwGetKey(pWindow, GLFW_KEY_LEFT_BRACKET) == GLFW_PRESS) lights[currentLight].innerCutoff += 0.01f;
-         if (glfwGetKey(pWindow, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS && glfwGetKey(pWindow, GLFW_KEY_RIGHT_BRACKET) == GLFW_PRESS) lights[currentLight].innerCutoff -= 0.01f;
+         if (!(glfwGetKey(pWindow, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) && glfwGetKey(pWindow, GLFW_KEY_LEFT_BRACKET) == GLFW_PRESS) {
+            lights[currentLight].outerCutoff += 0.001f;
+            if (!keyLeftBracketPressed) {
+                std::cout << "Decrease the spotlight outer radius\n"; //check 
+                keyLeftBracketPressed = true;
+            }
+         }
+         if (glfwGetKey(pWindow, GLFW_KEY_LEFT_BRACKET) == GLFW_RELEASE) {
+            keyLeftBracketPressed = false;
+         }
+         if (!(glfwGetKey(pWindow, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) && glfwGetKey(pWindow, GLFW_KEY_RIGHT_BRACKET) == GLFW_PRESS) {
+            lights[currentLight].outerCutoff -= 0.001f;
+            if (!keyRightBracketPressed) {
+                std::cout << "Increase the spotlight outer radius\n"; //check 
+                keyRightBracketPressed = true;
+            }
+         }
+         if (glfwGetKey(pWindow, GLFW_KEY_RIGHT_BRACKET) == GLFW_RELEASE) {
+            keyRightBracketPressed = false;
+         }
+         if (glfwGetKey(pWindow, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS && glfwGetKey(pWindow, GLFW_KEY_LEFT_BRACKET) == GLFW_PRESS) {
+            lights[currentLight].innerCutoff += 0.01f;
+            if (!keyShiftLeftBracketPressed) {
+                std::cout << "Decrease the spotlight inner radius\n"; //check 
+                keyShiftLeftBracketPressed = true;
+            }
+         }
+         if (glfwGetKey(pWindow, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS && glfwGetKey(pWindow, GLFW_KEY_LEFT_BRACKET) == GLFW_RELEASE) {
+            keyShiftLeftBracketPressed = false;
+         }
+         if (glfwGetKey(pWindow, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS && glfwGetKey(pWindow, GLFW_KEY_RIGHT_BRACKET) == GLFW_PRESS) {
+            lights[currentLight].innerCutoff -= 0.01f;
+            if (!keyShiftRightBracketPressed) {
+                std::cout << "Increase the spotlight inner radius\n"; //check 
+                keyShiftRightBracketPressed = true;
+            }
+         }
+         if (glfwGetKey(pWindow, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS && glfwGetKey(pWindow, GLFW_KEY_RIGHT_BRACKET) == GLFW_RELEASE) {
+            keyShiftRightBracketPressed = false;
+         }
+
          lights[currentLight].innerCutoff = glm::clamp(lights[currentLight].innerCutoff, lights[currentLight].outerCutoff, 0.99f);
          lights[currentLight].outerCutoff = glm::clamp(lights[currentLight].outerCutoff, 0.01f, lights[currentLight].innerCutoff);
  
          if (glfwGetKey(pWindow, GLFW_KEY_EQUAL) == GLFW_PRESS) {
              lights[currentLight].attenuation.y += 0.01f * deltaTime;
+             if (!keyPlusPressed) {
+                std::cout << "Increase attenuation \n"; //check 
+                keyPlusPressed = true;
+             }
+         }
+         if (glfwGetKey(pWindow, GLFW_KEY_EQUAL) == GLFW_RELEASE) {
+            keyPlusPressed = false;
          }
          if (glfwGetKey(pWindow, GLFW_KEY_MINUS) == GLFW_PRESS) {
              lights[currentLight].attenuation.y -= 0.01f * deltaTime;
+             if (!keyMinusPressed) {
+                std::cout << "Decrease attenuation \n"; // check
+                keyMinusPressed = true;
+             }
+         }
+         if (glfwGetKey(pWindow, GLFW_KEY_MINUS) == GLFW_RELEASE) {
+            keyMinusPressed = false;
          }
          
         lights[currentLight].attenuation.y = glm::clamp(lights[currentLight].attenuation.y, lights[currentLight].attenuation.z, lights[currentLight].attenuation.x);
@@ -21300,6 +21460,12 @@
     if (glfwGetKey(pWindow, GLFW_KEY_SPACE) == GLFW_PRESS && !makeFlashlightPressed){
         makeFlashlight = !makeFlashlight;
         makeFlashlightPressed = true;
+        if (makeFlashlight) {
+            std::cout << "Make the current light emanate from camera position\n"; 
+        } 
+        else {
+            std::cout << "Make the current light stop emanating from camera position\n"; 
+        }
     }
     if (glfwGetKey(pWindow, GLFW_KEY_SPACE) == GLFW_RELEASE){
         makeFlashlightPressed = false;
@@ -21653,7 +21819,7 @@
  
          // Calculate the next move in the idle state
          if (knucklesInstances[i].state == 0){
-             if (knucklesInstances[i].t >= 0.3f && false) {
+             if (knucklesInstances[i].t >= 0.3f) {
                  knucklesInstances[i].nextMove = rand() % knucklesValidMoves.size();
                  knucklesInstances[i].state = 1;
                  knucklesInstances[i].t = 0;
