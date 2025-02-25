@@ -49,7 +49,7 @@
  // change this to your desired window attributes
  #define WINDOW_WIDTH  1600
  #define WINDOW_HEIGHT 900
- #define WINDOW_TITLE  "Hello Transform (use WASDQE and arrow keys; 1 and 2 to select object)"
+ #define WINDOW_TITLE  "Ex2 - V.M.R. - Team Sonic"
  #define PI 3.14159265358979323846
  GLFWwindow *pWindow;
  float fov   =  75.0f;
