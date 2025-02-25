@@ -21184,7 +21184,8 @@
  bool useNormalsPressed = false;
  int currentLight = 1;
  bool currentLightPressed = false;
- 
+ bool makeFlashlight = true;
+ bool makeFlashlightPressed = false;
  
  void movementControls(float deltaTime, std::vector<lightInstance> &lights) {
  
@@ -21291,8 +21292,17 @@
              lights[currentLight].attenuation.y -= 0.01f * deltaTime;
          }
          
-         lights[currentLight].attenuation.y = glm::clamp(lights[currentLight].attenuation.y, lights[currentLight].attenuation.z, lights[currentLight].attenuation.x);
-     }
+        lights[currentLight].attenuation.y = glm::clamp(lights[currentLight].attenuation.y, lights[currentLight].attenuation.z, lights[currentLight].attenuation.x);
+        if (glfwGetKey(pWindow, GLFW_KEY_SPACE) == GLFW_PRESS && !makeFlashlightPressed){
+            makeFlashlight = !makeFlashlight;
+            makeFlashlightPressed = true;
+        }
+        if (glfwGetKey(pWindow, GLFW_KEY_SPACE) == GLFW_RELEASE){
+            makeFlashlightPressed = false;
+        }
+    }
+
+    
  }
  
  
@@ -21309,7 +21319,12 @@
      previousTime = currentTime;
      
      movementControls(deltaTime, lights);
- 
+    
+     if (makeFlashlight) {
+            lights[1].position = cameraPos;
+            lights[1].direction = cameraFront;
+     }
+
      glUniform1i(glGetUniformLocation(shader, "useNormals"), useNormals);
      
      // clear the whole frame
