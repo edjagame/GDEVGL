@@ -14,6 +14,7 @@
  * 
  *
  * M -> Toggle between the light sources
+ * SPACE -> Make the current light emanate from camera position
  * 
  * LIGHT MOVEMENT (RELATIVE TO WORLD SPACE)
  * J -> Move in the negative x direction
@@ -21293,16 +21294,16 @@
          }
          
         lights[currentLight].attenuation.y = glm::clamp(lights[currentLight].attenuation.y, lights[currentLight].attenuation.z, lights[currentLight].attenuation.x);
-        if (glfwGetKey(pWindow, GLFW_KEY_SPACE) == GLFW_PRESS && !makeFlashlightPressed){
-            makeFlashlight = !makeFlashlight;
-            makeFlashlightPressed = true;
-        }
-        if (glfwGetKey(pWindow, GLFW_KEY_SPACE) == GLFW_RELEASE){
-            makeFlashlightPressed = false;
-        }
+        
     }
 
-    
+    if (glfwGetKey(pWindow, GLFW_KEY_SPACE) == GLFW_PRESS && !makeFlashlightPressed){
+        makeFlashlight = !makeFlashlight;
+        makeFlashlightPressed = true;
+    }
+    if (glfwGetKey(pWindow, GLFW_KEY_SPACE) == GLFW_RELEASE){
+        makeFlashlightPressed = false;
+    }
  }
  
  
