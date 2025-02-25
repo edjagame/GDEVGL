@@ -10,8 +10,9 @@ vertices = []
 normals = []
 tex_coords = []
 indices = [] 
-inputFile = "TailsTextured.obj"
-outputFile = "tailsVerts.txt"
+model = "Sonic"
+inputFile = f"{model}Object.obj"
+outputFile = f"{model}Verts.txt"
 
 with open(inputFile, 'r') as obj_file:
     for line in obj_file:

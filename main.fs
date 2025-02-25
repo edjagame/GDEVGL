@@ -27,6 +27,7 @@ in vec3 shaderPosition;
 
 uniform sampler2D diffuseMap;
 uniform sampler2D normalMap;
+uniform sampler2D specularMap;
 
 uniform vec3 pointLightColor;
 uniform vec3 pointLightAttenuation;
@@ -65,7 +66,7 @@ void main()
 {
     // Setting the texture
     vec3 textureDiffuse = vec3(texture(diffuseMap, shaderTexCoord));
-
+    vec3 textureSpecular = vec3(texture(specularMap, shaderTexCoord));
     // look up the normal from the normal map, then reorient it with the current model transform via the TBN matrix
     vec3 textureNormal;
     if(useNormals) {
@@ -84,18 +85,16 @@ void main()
     pointLight.position = shaderPointLightPosition;
     pointLight.color = pointLightColor;
     pointLight.attenuation = pointLightAttenuation;
-    pointLight.ambientIntensity = 0.15f;
-    pointLight.ambient = pointLight.color * pointLight.ambientIntensity;
     
     pointLight.lightToFragDirection = normalize(pointLight.position - shaderPosition);
-    pointLight.diffuse = max(dot(normalDir, pointLight.lightToFragDirection), 0.0f) * pointLight.color;
+    pointLight.diffuse = max(dot(normalDir, pointLight.lightToFragDirection), 0.0f) * pointLight.color * textureDiffuse;
 
     // Specular lighting
     pointLight.specularPower = 64.0f;
-    pointLight.specularIntensity = 0.3f;
+    pointLight.specularIntensity = 1.0f;
     vec3 viewDir = normalize(eyePosition-shaderPosition);
     vec3 reflectDir = reflect(-pointLight.lightToFragDirection, normalDir);
-    pointLight.specular = pow(max(dot(reflectDir, viewDir), 0), pointLight.specularPower) * pointLight.color * pointLight.specularIntensity;
+    pointLight.specular = pow(max(dot(reflectDir, viewDir), 0), pointLight.specularPower) * pointLight.color * pointLight.specularIntensity * textureSpecular;
 
 
 
@@ -113,26 +112,28 @@ void main()
     float epsilon = spotLight.innerCutoff - spotLight.outerCutoff;
     float intensity = clamp((theta - spotLight.outerCutoff) / epsilon, 0.0f, 1.0f);
     
-    spotLight.ambient = vec3(0.0);
     spotLight.lightToFragDirection = normalize(spotLight.position - shaderPosition);
-    spotLight.diffuse = max(dot(normalDir, spotLight.lightToFragDirection), 0.0f) * spotLight.color * intensity;
+    spotLight.diffuse = max(dot(normalDir, spotLight.lightToFragDirection), 0.0f) * spotLight.color * intensity * textureDiffuse;
 
     // Specular lighting
     spotLight.specularPower = 64.0f;
     spotLight.specularIntensity = 0.3f;
     viewDir = normalize(eyePosition-shaderPosition);
     reflectDir = reflect(-spotLight.lightToFragDirection, normalDir);
-    spotLight.specular = pow(max(dot(reflectDir, viewDir), 0), spotLight.specularPower) * spotLight.color * spotLight.specularIntensity * intensity;
+    spotLight.specular = pow(max(dot(reflectDir, viewDir), 0), spotLight.specularPower) * spotLight.color * spotLight.specularIntensity * intensity * textureSpecular;
 
 
     // Final fragment color
+    vec3 ambient = 0.1f * textureDiffuse;
     float d = length(shaderPosition - pointLight.position);
     float pointLightTotalAttenuation = 1.0 / (pointLight.attenuation.x + pointLight.attenuation.y * d + pointLight.attenuation.z * (d * d));
     d = length(shaderPosition - spotLight.position);
     float spotLightTotalAttenuation = 1.0 / (spotLight.attenuation.x + spotLight.attenuation.y * d + spotLight.attenuation.z * (d * d));
     
     
-    vec3 light = (pointLight.ambient + pointLight.diffuse + pointLight.specular) * pointLightTotalAttenuation + (spotLight.ambient + spotLight.diffuse + spotLight.specular) * spotLightTotalAttenuation;
-    fragmentColor = vec4(light, 1.0) * vec4(textureDiffuse, 1.0);
+    vec3 light = ambient;
+    light += (pointLight.diffuse + pointLight.specular) * pointLightTotalAttenuation;
+    light += (spotLight.diffuse + spotLight.specular) * spotLightTotalAttenuation;
+    fragmentColor = vec4(light, 1.0);
     
 }
