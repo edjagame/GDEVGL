@@ -10,7 +10,7 @@ vertices = []
 normals = []
 tex_coords = []
 indices = [] 
-model = "Sonic"
+model = "Chess"
 inputFile = f"{model}Object.obj"
 outputFile = f"{model}Verts.txt"
 
@@ -63,7 +63,7 @@ for k,v in vertex_smooth.items():
         smooth_normal[k] = [x/length, y/length, z/length]
 
 rgba = ["1.0", "1.0", "1.0", "1.0"]
-format = "f,\t"
+format = "\n"
 numTriangles = len(indices) - 1
 
 
@@ -89,7 +89,6 @@ with open(outputFile, "w") as vertexFile:
     #indices[] contains N Triangles
     #Each Triangle has 3 FaceIndex Objects (indices[0]: FaceIndex, indices[1], indices[2])
     for triangleNum, triangle in enumerate(indices):
-        vertexFile.write(f"//Triangle #{triangleNum}\n")
 
         #Calculate Tangent
         tangent = calculate_tangent(triangle)
@@ -105,24 +104,21 @@ with open(outputFile, "w") as vertexFile:
             #x, y, z
             for i in pos:
                 vertexFile.write(f"{i:.6f}" + format)
-            vertexFile.write("\t")
 
             #RGBa
             vertexFile.write(rgba[0] + format)
             vertexFile.write(rgba[1] + format)
             vertexFile.write(rgba[2] + format)
-            vertexFile.write(rgba[3] + format+ "\t")
+            vertexFile.write(rgba[3] + format)
 
 
             #vertex normal coords
             for i in norm:
                 vertexFile.write(f"{i:.6f}" + format)
-            vertexFile.write(f"\t")
 
             #tex coords
             for i in tex:
                 vertexFile.write(f"{i:.6f}" + format)
-            vertexFile.write(f"\t")
 
             for i in tangent:
                 vertexFile.write(f"{i:.6f}" + format)
@@ -131,10 +127,8 @@ with open(outputFile, "w") as vertexFile:
             # vertexFile.write(f"\t")
 
             #end of file
-            vertexFile.write(f"\n")
-            
-        vertexFile.write(f"\n")
 
 
 
         print(f"Triangle {triangleNum} out of {numTriangles}")
+    
