@@ -110,12 +110,14 @@ std::vector<Vertex> tailsVertices = loadVerts("./TailsVerts.txt");
 std::vector<Vertex> sonicVertices = loadVerts("./SonicVerts.txt");
 std::vector<Vertex> knucklesVertices = loadVerts("./KnucklesVerts.txt");
 std::vector<Vertex> chessVertices = loadVerts("./ChessVerts.txt");
+
 // define OpenGL object IDs to represent the vertex array, shader program, and texture in the GPU
 GLuint tailsVAO, tailsVBO, chessVAO, chessVBO, sonicVAO, sonicVBO, knucklesVAO, knucklesVBO;
 GLuint tailsTex[3], sonicTex[3], chessTex[3], knucklesTex[3];
 GLuint shader;
-GLuint vaos[4] = {tailsVAO, chessVAO, sonicVAO, knucklesVAO};
+
 // variables controlling the object's position, rotation, and scaling
+
 
 const float tileWidth = 38.0/7.0f;
 const float smallAngle = 26.565f;
@@ -230,37 +232,6 @@ modelInstance knucklesInstances[2] = {
 };
 modelInstance chessInstances[1];
 
-//LIGHTING VARIABLES
-struct lightInstance {
-    int type;
-    glm::vec3 position;
-    glm::vec3 color;
-    glm::vec3 attenuation;
-    glm::vec3 direction;
-    float innerCutoff;
-    float outerCutoff;
-    glm::vec3 up = glm::vec3(1.0f);
-};
-lightInstance pointLight = {
-    0,                              // Type
-    glm::vec3(30.0f, 70.0f, 30.0f), // Position
-    glm::vec3(1.0),                 // Color
-    glm::vec3(1.0, 0.014, 0.00014), // Attenuation
-    glm::vec3(1.0),                 // Direction
-    0,                              // Inner Cutoff
-    0                               // Outer Cutoff
-};
-lightInstance spotLight = {
-    1,                              // Type
-    glm::vec3(0.0f, 30.0f, 0.0f),   // Position
-    glm::vec3(1.0f),                // Color
-    glm::vec3(1.0, 0.014, 0.00014), // Attenuation
-    glm::vec3(0.0f, -0.99f, 0.0f),  // Direction
-    glm::cos(glm::radians(12.5f)),  // Inner Cutoff
-    glm::cos(glm::radians(17.5f)),  // Outer Cutoff
-};
-std::vector<lightInstance> lights = {pointLight, spotLight};
-
 void setVAO(GLuint &VAO, GLuint &VBO, const std::vector<Vertex> vertices) {
     glGenVertexArrays(1, &VAO);
     glGenBuffers(1, &VBO);
@@ -319,105 +290,6 @@ bool loadTexture(GLuint* texture, std::string name) {
 // called by the main function to do initial setup, such as uploading vertex
 // arrays, shader programs, etc.; returns true if successful, false otherwise
 
-///////////////////////////////////////////////////////////////////////////////
-// SHADOW MAPPING CODE
-
-#define SHADOW_SIZE 1024
-GLuint shadowMapFbo;      // shadow map framebuffer object
-GLuint shadowMapTexture;  // shadow map texture
-GLuint shadowMapShader;   // shadow map shader
-
-bool setupShadowMap()
-{
-    // create the FBO for rendering shadows
-    glGenFramebuffers(1, &shadowMapFbo);
-    glBindFramebuffer(GL_FRAMEBUFFER, shadowMapFbo);
-
-    // attach a texture object to the framebuffer
-    glGenTextures(1, &shadowMapTexture);
-    glBindTexture(GL_TEXTURE_2D, shadowMapTexture);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, SHADOW_SIZE, SHADOW_SIZE,
-                 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, shadowMapTexture, 0);
-
-    // check if we did everything right
-    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-    {
-        std::cout << "Could not create custom framebuffer.\n";
-        return false;
-    }
-
-    // load the shader program for drawing the shadow map
-    shadowMapShader = gdevLoadShader("demo8s.vs", "demo8s.fs");
-    if (! shadowMapShader)
-        return false;
-
-    // set the framebuffer back to the default onscreen buffer
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    return true;
-}
-
-glm::mat4 renderShadowMap(lightInstance light)
-{
-    // use the shadow framebuffer for drawing the shadow map
-    glBindFramebuffer(GL_FRAMEBUFFER, shadowMapFbo);
-
-    // the viewport should be the size of the shadow map
-    glViewport(0, 0, SHADOW_SIZE, SHADOW_SIZE);
-
-    // clear the shadow map
-    // (we don't have a color buffer attachment, so no need to clear that)
-    glClear(GL_DEPTH_BUFFER_BIT);
-
-    // using the shadow map shader...
-    glUseProgram(shadowMapShader);
-
-    // ... set up the light space matrix...
-    // (note that if you use a spot light, the FOV and the center position
-    // vector should be set to the spot light's outer cone angle times 2
-    // and the spot light's focus point, respectively)
-    glm::mat4 lightTransform;
-    lightTransform = glm::perspective(90.0f,       // fov
-                                      1.0f,                      // aspect ratio
-                                      0.1f,                      // near plane
-                                      100.0f);                   // far plane
-    lightTransform *= glm::lookAt(light.position,                 // eye position
-                                  light.position + light.direction,   // center position
-                                  glm::vec3(0.0f, 1.0f, 0.0f));  // up vector
-    glUniformMatrix4fv(glGetUniformLocation(shadowMapShader, "lightTransform"),
-                       1, GL_FALSE, glm::value_ptr(lightTransform));
-
-    // ... set up the model matrix... (just identity for this demo)
-    glm::mat4 modelTransform = glm::mat4(1.0f);
-    glUniformMatrix4fv(glGetUniformLocation(shadowMapShader, "modelTransform"),
-                       1, GL_FALSE, glm::value_ptr(modelTransform));
-
-    // ... then draw our triangles
-    glBindVertexArray(tailsVAO);
-    glDrawArrays(GL_TRIANGLES, 0, tailsVertices.size());
-    glBindVertexArray(sonicVAO);
-    glDrawArrays(GL_TRIANGLES, 0, sonicVertices.size());
-    glBindVertexArray(knucklesVAO);
-    glDrawArrays(GL_TRIANGLES, 0, knucklesVertices.size());
-    glBindVertexArray(chessVAO);
-    glDrawArrays(GL_TRIANGLES, 0, chessVertices.size());
-    // set the framebuffer back to the default onscreen buffer
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-    // before drawing the final scene, we need to set drawing to the whole window
-    int width, height;
-    glfwGetFramebufferSize(pWindow, &width, &height);
-    glViewport(0, 0, width, height);
-
-    // we will need the light transformation matrix again in the main rendering code
-    return lightTransform;
-}
-
-// SHADOW MAPPING CODE
-///////////////////////////////////////////////////////////////////////////////
-
 bool setup()
 {
     // upload the TAILS model to the GPU (explanations omitted for brevity)
@@ -434,15 +306,15 @@ bool setup()
     glUseProgram(shader);
 
     // load our texture
-    if (!loadTexture(sonicTex, "Sonic")) return false;
-    if (!loadTexture(knucklesTex, "Knuckles")) return false;
-    if (!loadTexture(tailsTex, "Tails")) return false;
-    if (!loadTexture(chessTex, "Chess")) return false;
+   if (!loadTexture(sonicTex, "Sonic")) return false;
+   if (!loadTexture(knucklesTex, "Knuckles")) return false;
+   if (!loadTexture(tailsTex, "Tails")) return false;
+   if (!loadTexture(chessTex, "Chess")) return false;
 
     glUniform1i(glGetUniformLocation(shader, "diffuseMap"), 0);
     glUniform1i(glGetUniformLocation(shader, "normalMap"),  1);
     glUniform1i(glGetUniformLocation(shader, "specularMap"), 2);
-    glUniform1i(glGetUniformLocation(shader, "shadowMap"), 3);
+
     // enable OpenGL blending so that texels with alpha values less than one are drawn transparent
     // (you can omit these lines if you don't use alpha)
     glEnable(GL_BLEND);
@@ -453,12 +325,6 @@ bool setup()
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
 
-    ///////////////////////////////////////////////////////////////////////////
-    // setup shadow rendering
-    if (! setupShadowMap())
-        return false;
-    ///////////////////////////////////////////////////////////////////////////
-
     return true;
 }
 
@@ -467,132 +333,318 @@ glm::vec3 cameraPos   = glm::vec3(0.0f, 10.0f, 40.0f);
 glm::vec3 cameraFront = glm::vec3(0.0f, -1.0f, -3.0f);
 glm::vec3 cameraUp    = glm::vec3(0.0f, 1.0f, 0.0f);
 
-bool useNormals = true;
- bool useNormalsPressed = false;
- int currentLight = 1;
- bool currentLightPressed = false;
- bool makeFlashlight = true;
- bool makeFlashlightPressed = false;
- 
- void movementControls(float deltaTime, std::vector<lightInstance> &lights) {
- 
-     float cameraSpeed = deltaTime * 20;
-     
-     // Scene Bounds
-     const float MIN_Y = 3.0f;
-     const float MAX_Y = 40.0f;
-     const float MIN_XZ = -40.0f;
-     const float MAX_XZ = 40.0f;
- 
-     // Move camera
-     if (glfwGetKey(pWindow, GLFW_KEY_W) == GLFW_PRESS) cameraPos += cameraSpeed * cameraFront;
-     if (glfwGetKey(pWindow, GLFW_KEY_S) == GLFW_PRESS) cameraPos -= cameraSpeed * cameraFront;
-     if (glfwGetKey(pWindow, GLFW_KEY_A) == GLFW_PRESS) cameraPos -= glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
-     if (glfwGetKey(pWindow, GLFW_KEY_D) == GLFW_PRESS) cameraPos += glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
-     if (glfwGetKey(pWindow, GLFW_KEY_E) == GLFW_PRESS) cameraPos += cameraSpeed * cameraUp;
-     if (glfwGetKey(pWindow, GLFW_KEY_Q) == GLFW_PRESS) cameraPos -= cameraSpeed * cameraUp;
- 
-     cameraPos.y = glm::clamp(cameraPos.y, MIN_Y, MAX_Y);
-     cameraPos.x = glm::clamp(cameraPos.x, MIN_XZ, MAX_XZ);
-     cameraPos.z = glm::clamp(cameraPos.z, MIN_XZ, MAX_XZ);
- 
- 
-     //Toggle Normal Map Usage
-     if (glfwGetKey(pWindow, GLFW_KEY_N) == GLFW_PRESS && !useNormalsPressed){
-         useNormals = !useNormals;
-         useNormalsPressed = true;
-     }
-     if (glfwGetKey(pWindow, GLFW_KEY_N) == GLFW_RELEASE){
-         useNormalsPressed = false;
-     }
- 
-     
-     //Toggle Light
-     if (glfwGetKey(pWindow, GLFW_KEY_M) == GLFW_PRESS && !currentLightPressed){
-         currentLight = (currentLight + 1) % lights.size();
-         currentLightPressed = true;
-     }
-     if (glfwGetKey(pWindow, GLFW_KEY_M) == GLFW_RELEASE){
-         currentLightPressed = false;
-     }
- 
-     //Manipulate light parameters
-     float lightSpeed = 30.0f; //Not to be confused with the speed of light
- 
-     //Light Position
-     if (glfwGetKey(pWindow, GLFW_KEY_J) == GLFW_PRESS) lights[currentLight].position.x -= lightSpeed * deltaTime;
-     if (glfwGetKey(pWindow, GLFW_KEY_L) == GLFW_PRESS) lights[currentLight].position.x += lightSpeed * deltaTime;
-     if (glfwGetKey(pWindow, GLFW_KEY_I) == GLFW_PRESS) lights[currentLight].position.z -= lightSpeed * deltaTime;
-     if (glfwGetKey(pWindow, GLFW_KEY_K) == GLFW_PRESS) lights[currentLight].position.z += lightSpeed * deltaTime;  
-     if (glfwGetKey(pWindow, GLFW_KEY_U) == GLFW_PRESS) lights[currentLight].position.y += lightSpeed * deltaTime;
-     if (glfwGetKey(pWindow, GLFW_KEY_O) == GLFW_PRESS) lights[currentLight].position.y -= lightSpeed * deltaTime;
- 
-     const float LIGHT_MIN_Y = 3.0f;
-     const float LIGHT_MAX_Y = 100.0f;
-     const float LIGHT_MIN_XZ = -30.0f;
-     const float LIGHT_MAX_XZ = 30.0f;
- 
-     lights[currentLight].position.y = glm::clamp(lights[currentLight].position.y, LIGHT_MIN_Y, LIGHT_MAX_Y);
-     lights[currentLight].position.x = glm::clamp(lights[currentLight].position.x, LIGHT_MIN_XZ, LIGHT_MAX_XZ);
-     lights[currentLight].position.z = glm::clamp(lights[currentLight].position.z, LIGHT_MIN_XZ, LIGHT_MAX_XZ);
- 
-     //Light rotation (for spotlights)
-     float rotationSpeed = 100.0f;
-     if (lights[currentLight].type == 1){
- 
-         if (glfwGetKey(pWindow, GLFW_KEY_LEFT) == GLFW_PRESS) {
-             glm::mat4 rotationMatrix = glm::rotate(glm::mat4(1.0f), glm::radians(rotationSpeed * deltaTime), glm::vec3(0.0f, 1.0f, 0.0f));
-             lights[currentLight].direction = glm::vec3(rotationMatrix * glm::vec4(lights[currentLight].direction, 0.0f));
-             lights[currentLight].up = glm::vec3(rotationMatrix * glm::vec4(lights[currentLight].up, 0.0f));
-         }
-         if (glfwGetKey(pWindow, GLFW_KEY_RIGHT) == GLFW_PRESS) {
-             glm::mat4 rotationMatrix = glm::rotate(glm::mat4(1.0f), glm::radians(-rotationSpeed * deltaTime), glm::vec3(0.0f, 1.0f, 0.0f));
-             lights[currentLight].direction = glm::vec3(rotationMatrix * glm::vec4(lights[currentLight].direction, 0.0f));
-             lights[currentLight].up = glm::vec3(rotationMatrix * glm::vec4(lights[currentLight].up, 0.0f));
-         }
-         
-         glm::vec3 pitchAxis = glm::normalize(glm::cross(lights[currentLight].direction, lights[currentLight].up));
-         if (glfwGetKey(pWindow, GLFW_KEY_UP) == GLFW_PRESS && lights[currentLight].direction.y <= -0.0001f) {
-             glm::mat4 rotationMatrix = glm::rotate(glm::mat4(1.0f), glm::radians(rotationSpeed * deltaTime), pitchAxis);
-             lights[currentLight].direction = glm::vec3(rotationMatrix * glm::vec4(lights[currentLight].direction, 0.0f));
-         }
-         if (glfwGetKey(pWindow, GLFW_KEY_DOWN) == GLFW_PRESS && lights[currentLight].direction.y >= -0.9999f) {
-             glm::mat4 rotationMatrix = glm::rotate(glm::mat4(1.0f), glm::radians(-rotationSpeed * deltaTime), pitchAxis);
-             lights[currentLight].direction = glm::vec3(rotationMatrix * glm::vec4(lights[currentLight].direction, 0.0f));
-         }
- 
-         lights[currentLight].direction = glm::normalize(lights[currentLight].direction);
- 
-         
- 
-         if (!(glfwGetKey(pWindow, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) && glfwGetKey(pWindow, GLFW_KEY_LEFT_BRACKET) == GLFW_PRESS) lights[currentLight].outerCutoff += 0.001f;
-         if (!(glfwGetKey(pWindow, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) && glfwGetKey(pWindow, GLFW_KEY_RIGHT_BRACKET) == GLFW_PRESS) lights[currentLight].outerCutoff -= 0.001f;
-         if (glfwGetKey(pWindow, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS && glfwGetKey(pWindow, GLFW_KEY_LEFT_BRACKET) == GLFW_PRESS) lights[currentLight].innerCutoff += 0.01f;
-         if (glfwGetKey(pWindow, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS && glfwGetKey(pWindow, GLFW_KEY_RIGHT_BRACKET) == GLFW_PRESS) lights[currentLight].innerCutoff -= 0.01f;
-         lights[currentLight].innerCutoff = glm::clamp(lights[currentLight].innerCutoff, lights[currentLight].outerCutoff, 0.99f);
-         lights[currentLight].outerCutoff = glm::clamp(lights[currentLight].outerCutoff, 0.01f, lights[currentLight].innerCutoff);
- 
-         if (glfwGetKey(pWindow, GLFW_KEY_EQUAL) == GLFW_PRESS) {
-             lights[currentLight].attenuation.y += 0.01f * deltaTime;
-         }
-         if (glfwGetKey(pWindow, GLFW_KEY_MINUS) == GLFW_PRESS) {
-             lights[currentLight].attenuation.y -= 0.01f * deltaTime;
-         }
-         
-        lights[currentLight].attenuation.y = glm::clamp(lights[currentLight].attenuation.y, lights[currentLight].attenuation.z, lights[currentLight].attenuation.x);
+
+//LIGHTING VARIABLES
+struct lightInstance {
+    int type;
+    glm::vec3 position;
+    glm::vec3 color;
+    glm::vec3 attenuation;
+    glm::vec3 direction;
+    float innerCutoff;
+    float outerCutoff;
+    glm::vec3 up = glm::vec3(1.0f);
+};
+lightInstance pointLight = {
+    0,                              // Type
+    glm::vec3(30.0f, 70.0f, 30.0f), // Position
+    glm::vec3(1.0),                 // Color
+    glm::vec3(1.0, 0.014, 0.00014), // Attenuation
+    glm::vec3(1.0),                 // Direction
+    0,                              // Inner Cutoff
+    0                               // Outer Cutoff
+};
+lightInstance spotLight = {
+    1,                              // Type
+    glm::vec3(0.0f, 30.0f, 0.0f),   // Position
+    glm::vec3(1.0f),                // Color
+    glm::vec3(1.0, 0.014, 0.00014), // Attenuation
+    glm::vec3(0.0f, -0.99f, 0.0f),  // Direction
+    glm::cos(glm::radians(12.5f)),  // Inner Cutoff
+    glm::cos(glm::radians(17.5f)),  // Outer Cutoff
+};
+std::vector<lightInstance> lights = {pointLight, spotLight};
+
+bool useNormals = true, useNormalsPressed = false;
+int currentLight = 1;
+bool currentLightPressed = false;
+bool makeFlashlight = false, makeFlashlightPressed = false;
+bool keyJPressed = false, keyLPressed = false, keyIPressed = false, keyKPressed = false;
+bool keyUPressed = false, keyOPressed = false;
+bool keyLeftPressed = false, keyRightPressed = false, keyUpPressed = false, keyDownPressed = false;
+bool keyMinusPressed = false, keyPlusPressed = false;
+bool keyLeftBracketPressed = false, keyRightBracketPressed = false;
+bool keyShiftLeftBracketPressed = false, keyShiftRightBracketPressed = false;
+
+void movementControls(float deltaTime, std::vector<lightInstance> &lights) {
+
+    float cameraSpeed = deltaTime * 20;
+    
+    // Scene Bounds
+    const float MIN_Y = 3.0f;
+    const float MAX_Y = 40.0f;
+    const float MIN_XZ = -40.0f;
+    const float MAX_XZ = 40.0f;
+
+    // Move camera
+    if (glfwGetKey(pWindow, GLFW_KEY_W) == GLFW_PRESS) cameraPos += cameraSpeed * cameraFront;
+    if (glfwGetKey(pWindow, GLFW_KEY_S) == GLFW_PRESS) cameraPos -= cameraSpeed * cameraFront;
+    if (glfwGetKey(pWindow, GLFW_KEY_A) == GLFW_PRESS) cameraPos -= glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
+    if (glfwGetKey(pWindow, GLFW_KEY_D) == GLFW_PRESS) cameraPos += glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
+    if (glfwGetKey(pWindow, GLFW_KEY_E) == GLFW_PRESS) cameraPos += cameraSpeed * cameraUp;
+    if (glfwGetKey(pWindow, GLFW_KEY_Q) == GLFW_PRESS) cameraPos -= cameraSpeed * cameraUp;
+
+    cameraPos.y = glm::clamp(cameraPos.y, MIN_Y, MAX_Y);
+    cameraPos.x = glm::clamp(cameraPos.x, MIN_XZ, MAX_XZ);
+    cameraPos.z = glm::clamp(cameraPos.z, MIN_XZ, MAX_XZ);
+
+
+    //Toggle Normal Map Usage
+    if (glfwGetKey(pWindow, GLFW_KEY_N) == GLFW_PRESS && !useNormalsPressed){
+        useNormals = !useNormals;
+        useNormalsPressed = true;
+        if(useNormals){
+           std::cout << "Toggle Normal Map On\n";
+        }
+       else {
+           std::cout << "Toggle Normal Map Off\n";
+       } 
+    }
+    if (glfwGetKey(pWindow, GLFW_KEY_N) == GLFW_RELEASE){
+        useNormalsPressed = false;
+    }
+
+    
+    //Toggle Light
+    if (glfwGetKey(pWindow, GLFW_KEY_M) == GLFW_PRESS && !currentLightPressed){
+        currentLight = (currentLight + 1) % lights.size();
+        currentLightPressed = true;
+        if(currentLight == 0){
+           std::cout << "Toggle Point Light\n";
+        }
+        else {
+           std::cout << "Toggle Spot Light\n";
+        }
+    }
+    if (glfwGetKey(pWindow, GLFW_KEY_M) == GLFW_RELEASE){
+        currentLightPressed = false;
+    }
+
+    //Manipulate light parameters
+    float lightSpeed = 30.0f; //Not to be confused with the speed of light
+
+    //Light Position
+
+    if (glfwGetKey(pWindow, GLFW_KEY_J) == GLFW_PRESS) {
+       lights[currentLight].position.x -= lightSpeed * deltaTime;
+       if (!keyJPressed) {
+           std::cout << "Move Selected Light Source in the Negative X Direction\n"; 
+           keyJPressed = true;
+       }
+    }
+    if (glfwGetKey(pWindow, GLFW_KEY_J) == GLFW_RELEASE) {
+       keyJPressed = false;
+    }
+    if (glfwGetKey(pWindow, GLFW_KEY_L) == GLFW_PRESS) {
+       lights[currentLight].position.x += lightSpeed * deltaTime;
+       if (!keyLPressed) {
+           std::cout << "Move Selected Light Source in the Positive X Direction\n"; 
+           keyLPressed = true;
+       }
+    }
+    if (glfwGetKey(pWindow, GLFW_KEY_L) == GLFW_RELEASE) {
+       keyLPressed = false;
+    }
+    if (glfwGetKey(pWindow, GLFW_KEY_I) == GLFW_PRESS) {
+       lights[currentLight].position.z -= lightSpeed * deltaTime;
+       if (!keyIPressed) {
+           std::cout << "Move Selected Light Source in the Positive Z Direction\n"; 
+           keyIPressed = true;
+       }
+    }
+    if (glfwGetKey(pWindow, GLFW_KEY_I) == GLFW_RELEASE) {
+       keyIPressed = false;
+    }
+    if (glfwGetKey(pWindow, GLFW_KEY_K) == GLFW_PRESS) {
+       lights[currentLight].position.z += lightSpeed * deltaTime;
+       if (!keyKPressed) {
+           std::cout << "Move Selected Light Source in the Negative Z Direction\n"; 
+           keyKPressed = true;
+       }
+    }
+    if (glfwGetKey(pWindow, GLFW_KEY_K) == GLFW_RELEASE) {
+       keyKPressed = false;
+    }
+    if (glfwGetKey(pWindow, GLFW_KEY_U) == GLFW_PRESS) {
+       lights[currentLight].position.y += lightSpeed * deltaTime;
+       if (!keyUPressed) {
+           std::cout << "Move Selected Light Source in the Positive Y Direction\n"; 
+           keyUPressed = true;
+       }
+    }
+    if (glfwGetKey(pWindow, GLFW_KEY_U) == GLFW_RELEASE) {
+       keyUPressed = false;
+    }
+    if (glfwGetKey(pWindow, GLFW_KEY_O) == GLFW_PRESS) {
+       lights[currentLight].position.y -= lightSpeed * deltaTime;
+       if (!keyOPressed) {
+           std::cout << "Move Selected Light Source in the Negative Y Direction\n"; 
+           keyOPressed = true;
+       }
+    }
+    if (glfwGetKey(pWindow, GLFW_KEY_O) == GLFW_RELEASE) {
+       keyOPressed = false;
+    }
+
+    const float LIGHT_MIN_Y = 3.0f;
+    const float LIGHT_MAX_Y = 100.0f;
+    const float LIGHT_MIN_XZ = -30.0f;
+    const float LIGHT_MAX_XZ = 30.0f;
+
+    lights[currentLight].position.y = glm::clamp(lights[currentLight].position.y, LIGHT_MIN_Y, LIGHT_MAX_Y);
+    lights[currentLight].position.x = glm::clamp(lights[currentLight].position.x, LIGHT_MIN_XZ, LIGHT_MAX_XZ);
+    lights[currentLight].position.z = glm::clamp(lights[currentLight].position.z, LIGHT_MIN_XZ, LIGHT_MAX_XZ);
+
+    //Light rotation (for spotlights)
+    float rotationSpeed = 100.0f;
+    if (lights[currentLight].type == 1){
+
+        if (glfwGetKey(pWindow, GLFW_KEY_LEFT) == GLFW_PRESS) {
+            glm::mat4 rotationMatrix = glm::rotate(glm::mat4(1.0f), glm::radians(rotationSpeed * deltaTime), glm::vec3(0.0f, 1.0f, 0.0f));
+            lights[currentLight].direction = glm::vec3(rotationMatrix * glm::vec4(lights[currentLight].direction, 0.0f));
+            lights[currentLight].up = glm::vec3(rotationMatrix * glm::vec4(lights[currentLight].up, 0.0f));
+            if (!keyLeftPressed) {
+               std::cout << "Rotate Selected Light Source along the Yaw (Counterclockwise from above)\n";
+               keyLeftPressed = true;
+            }
+        }
+        if (glfwGetKey(pWindow, GLFW_KEY_LEFT) == GLFW_RELEASE) {
+           keyLeftPressed = false;
+        }
+        if (glfwGetKey(pWindow, GLFW_KEY_RIGHT) == GLFW_PRESS) {
+            glm::mat4 rotationMatrix = glm::rotate(glm::mat4(1.0f), glm::radians(-rotationSpeed * deltaTime), glm::vec3(0.0f, 1.0f, 0.0f));
+            lights[currentLight].direction = glm::vec3(rotationMatrix * glm::vec4(lights[currentLight].direction, 0.0f));
+            lights[currentLight].up = glm::vec3(rotationMatrix * glm::vec4(lights[currentLight].up, 0.0f));
+            if (!keyRightPressed) {
+               std::cout << "Rotate Selected Light Source along the Yaw (Clockwise from above)\n";
+               keyRightPressed = true;
+            }
+        }
+        if (glfwGetKey(pWindow, GLFW_KEY_RIGHT) == GLFW_RELEASE) {
+           keyRightPressed = false;
+        }
         
-    }
+        glm::vec3 pitchAxis = glm::normalize(glm::cross(lights[currentLight].direction, lights[currentLight].up));
+        if (glfwGetKey(pWindow, GLFW_KEY_UP) == GLFW_PRESS && lights[currentLight].direction.y <= -0.0001f) {
+            glm::mat4 rotationMatrix = glm::rotate(glm::mat4(1.0f), glm::radians(rotationSpeed * deltaTime), pitchAxis);
+            lights[currentLight].direction = glm::vec3(rotationMatrix * glm::vec4(lights[currentLight].direction, 0.0f));
+            if (!keyUpPressed) {
+               std::cout << "Rotate Selected Light Source along the Pitch in Positive direction\n";
+               keyUpPressed = true;
+            }
+        }
+        if (glfwGetKey(pWindow, GLFW_KEY_UP) == GLFW_RELEASE) {
+           keyUpPressed = false;
+        }
+        if (glfwGetKey(pWindow, GLFW_KEY_DOWN) == GLFW_PRESS && lights[currentLight].direction.y >= -0.9999f) {
+            glm::mat4 rotationMatrix = glm::rotate(glm::mat4(1.0f), glm::radians(-rotationSpeed * deltaTime), pitchAxis);
+            lights[currentLight].direction = glm::vec3(rotationMatrix * glm::vec4(lights[currentLight].direction, 0.0f));
+            if (!keyDownPressed) {
+               std::cout << "Rotate Selected Light Source along the Pitch in Negative direction\n";
+               keyDownPressed = true;
+            }
+        }
+        if (glfwGetKey(pWindow, GLFW_KEY_DOWN) == GLFW_RELEASE) {
+           keyDownPressed = false;
+        }
 
-    if (glfwGetKey(pWindow, GLFW_KEY_SPACE) == GLFW_PRESS && !makeFlashlightPressed){
-        makeFlashlight = !makeFlashlight;
-        makeFlashlightPressed = true;
-    }
-    if (glfwGetKey(pWindow, GLFW_KEY_SPACE) == GLFW_RELEASE){
-        makeFlashlightPressed = false;
-    }
- }
+        lights[currentLight].direction = glm::normalize(lights[currentLight].direction);  
 
- int current = 0;
+        if (!(glfwGetKey(pWindow, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) && glfwGetKey(pWindow, GLFW_KEY_LEFT_BRACKET) == GLFW_PRESS) {
+           lights[currentLight].outerCutoff += 0.001f;
+           if (!keyLeftBracketPressed) {
+               std::cout << "Decrease the spotlight outer radius\n"; //check 
+               keyLeftBracketPressed = true;
+           }
+        }
+        if (glfwGetKey(pWindow, GLFW_KEY_LEFT_BRACKET) == GLFW_RELEASE) {
+           keyLeftBracketPressed = false;
+        }
+        if (!(glfwGetKey(pWindow, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) && glfwGetKey(pWindow, GLFW_KEY_RIGHT_BRACKET) == GLFW_PRESS) {
+           lights[currentLight].outerCutoff -= 0.001f;
+           if (!keyRightBracketPressed) {
+               std::cout << "Increase the spotlight outer radius\n"; //check 
+               keyRightBracketPressed = true;
+           }
+        }
+        if (glfwGetKey(pWindow, GLFW_KEY_RIGHT_BRACKET) == GLFW_RELEASE) {
+           keyRightBracketPressed = false;
+        }
+        if (glfwGetKey(pWindow, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS && glfwGetKey(pWindow, GLFW_KEY_LEFT_BRACKET) == GLFW_PRESS) {
+           lights[currentLight].innerCutoff += 0.01f;
+           if (!keyShiftLeftBracketPressed) {
+               std::cout << "Decrease the spotlight inner radius\n"; //check 
+               keyShiftLeftBracketPressed = true;
+           }
+        }
+        if (glfwGetKey(pWindow, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS && glfwGetKey(pWindow, GLFW_KEY_LEFT_BRACKET) == GLFW_RELEASE) {
+           keyShiftLeftBracketPressed = false;
+        }
+        if (glfwGetKey(pWindow, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS && glfwGetKey(pWindow, GLFW_KEY_RIGHT_BRACKET) == GLFW_PRESS) {
+           lights[currentLight].innerCutoff -= 0.01f;
+           if (!keyShiftRightBracketPressed) {
+               std::cout << "Increase the spotlight inner radius\n"; //check 
+               keyShiftRightBracketPressed = true;
+           }
+        }
+        if (glfwGetKey(pWindow, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS && glfwGetKey(pWindow, GLFW_KEY_RIGHT_BRACKET) == GLFW_RELEASE) {
+           keyShiftRightBracketPressed = false;
+        }
+
+        lights[currentLight].innerCutoff = glm::clamp(lights[currentLight].innerCutoff, lights[currentLight].outerCutoff, 0.99f);
+        lights[currentLight].outerCutoff = glm::clamp(lights[currentLight].outerCutoff, 0.01f, lights[currentLight].innerCutoff);
+
+        if (glfwGetKey(pWindow, GLFW_KEY_EQUAL) == GLFW_PRESS) {
+            lights[currentLight].attenuation.y += 0.01f * deltaTime;
+            if (!keyPlusPressed) {
+               std::cout << "Increase attenuation \n"; //check 
+               keyPlusPressed = true;
+            }
+        }
+        if (glfwGetKey(pWindow, GLFW_KEY_EQUAL) == GLFW_RELEASE) {
+           keyPlusPressed = false;
+        }
+        if (glfwGetKey(pWindow, GLFW_KEY_MINUS) == GLFW_PRESS) {
+            lights[currentLight].attenuation.y -= 0.01f * deltaTime;
+            if (!keyMinusPressed) {
+               std::cout << "Decrease attenuation \n"; // check
+               keyMinusPressed = true;
+            }
+        }
+        if (glfwGetKey(pWindow, GLFW_KEY_MINUS) == GLFW_RELEASE) {
+           keyMinusPressed = false;
+        }
+        
+       lights[currentLight].attenuation.y = glm::clamp(lights[currentLight].attenuation.y, lights[currentLight].attenuation.z, lights[currentLight].attenuation.x);
+       
+   }
+
+   if (glfwGetKey(pWindow, GLFW_KEY_SPACE) == GLFW_PRESS && !makeFlashlightPressed){
+       makeFlashlight = !makeFlashlight;
+       makeFlashlightPressed = true;
+       if (makeFlashlight) {
+           std::cout << "Make the current light emanate from camera position\n"; 
+       } 
+       else {
+           std::cout << "Make the current light stop emanating from camera position\n"; 
+       }
+   }
+   if (glfwGetKey(pWindow, GLFW_KEY_SPACE) == GLFW_RELEASE){
+       makeFlashlightPressed = false;
+   }
+}
+
+int current = 0;
 double previousTime = 0.0;
 
 // called by the main function to do rendering per frame
@@ -618,13 +670,6 @@ void render()
     // clear the whole frame
     glClearColor(0.0f, 0.0f, 0.05f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-    ///////////////////////////////////////////////////////////////////////////
-    // draw the shadow map
-    glm::mat4 lightTransform = renderShadowMap(lights[1]);
-    glUniformMatrix4fv(glGetUniformLocation(shader, "lightTransform"),
-                       1, GL_FALSE, glm::value_ptr(lightTransform));
-    ///////////////////////////////////////////////////////////////////////////
 
     // using our shader program...
     glUseProgram(shader);
@@ -736,6 +781,8 @@ void render()
                                         glm::vec3(0.0f, 0.0f, 1.0f));
         }
 
+        
+
         //Scale (in case its needed)
         modelTransform = glm::scale(modelTransform,
                                     glm::vec3(tailsInstances[i].scaling, tailsInstances[i].scaling, tailsInstances[i].scaling));   // scale x and y
@@ -751,8 +798,11 @@ void render()
         glBindTexture(GL_TEXTURE_2D, tailsTex[1]);
         glActiveTexture(GL_TEXTURE2);
         glBindTexture(GL_TEXTURE_2D, tailsTex[2]);
-        glActiveTexture(GL_TEXTURE3);
-        glBindTexture(GL_TEXTURE_2D, shadowMapTexture);
+        
+        glUniform1i(glGetUniformLocation(shader, "diffuseMap"), 0);
+        glUniform1i(glGetUniformLocation(shader, "normalMap"), 1);
+        glUniform1i(glGetUniformLocation(shader, "specularMap"), 2);
+
 
         // ... then draw our triangles
         glBindVertexArray(tailsVAO);
@@ -885,8 +935,10 @@ void render()
         glBindTexture(GL_TEXTURE_2D, sonicTex[1]);
         glActiveTexture(GL_TEXTURE2);
         glBindTexture(GL_TEXTURE_2D, sonicTex[2]);
-        glActiveTexture(GL_TEXTURE3);
-        glBindTexture(GL_TEXTURE_2D, shadowMapTexture);
+ 
+        glUniform1i(glGetUniformLocation(shader, "diffuseMap"), 0);
+        glUniform1i(glGetUniformLocation(shader, "normalMap"), 1);
+        glUniform1i(glGetUniformLocation(shader, "specularMap"), 2);
 
 
         // ... then draw our triangles
@@ -1016,8 +1068,10 @@ void render()
         glBindTexture(GL_TEXTURE_2D, knucklesTex[1]);
         glActiveTexture(GL_TEXTURE2);
         glBindTexture(GL_TEXTURE_2D, knucklesTex[2]);
-        glActiveTexture(GL_TEXTURE3);
-        glBindTexture(GL_TEXTURE_2D, shadowMapTexture);
+ 
+        glUniform1i(glGetUniformLocation(shader, "diffuseMap"), 0);
+        glUniform1i(glGetUniformLocation(shader, "normalMap"), 1);
+        glUniform1i(glGetUniformLocation(shader, "specularMap"), 2);
         // ... then draw our triangles
         glBindVertexArray(knucklesVAO);
         glDrawArrays(GL_TRIANGLES, 0, knucklesVertices.size());
@@ -1049,8 +1103,11 @@ void render()
         glBindTexture(GL_TEXTURE_2D, chessTex[1]);
         glActiveTexture(GL_TEXTURE2);
         glBindTexture(GL_TEXTURE_2D, chessTex[2]);
-        glActiveTexture(GL_TEXTURE3);
-        glBindTexture(GL_TEXTURE_2D, shadowMapTexture);
+        
+        glUniform1i(glGetUniformLocation(shader, "diffuseMap"), 0);
+        glUniform1i(glGetUniformLocation(shader, "normalMap"), 1);
+        glUniform1i(glGetUniformLocation(shader, "specularMap"), 2);
+
         // ... then draw our triangles
         glBindVertexArray(chessVAO);
         glDrawArrays(GL_TRIANGLES, 0, chessVertices.size());

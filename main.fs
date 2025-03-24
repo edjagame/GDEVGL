@@ -24,10 +24,12 @@ in vec3 shaderPointLightPosition;
 in vec3 shaderSpotLightPosition;
 in vec3 shaderSpotLightDirection;
 in vec3 shaderPosition;
+in vec4 shaderLightSpacePosition;
 
 uniform sampler2D diffuseMap;
 uniform sampler2D normalMap;
 uniform sampler2D specularMap;
+uniform sampler2D shadowMap;
 
 uniform vec3 pointLightColor;
 uniform vec3 pointLightAttenuation;
@@ -61,6 +63,35 @@ struct lightInstance {
     vec3 attenuation;
 
 }; 
+
+bool inShadow()
+{
+    // perform perspective division and rescale to the [0, 1] range to get the coordinates into the depth texture
+    vec3 position = shaderLightSpacePosition.xyz / shaderLightSpacePosition.w;
+    position = position * 0.5f + 0.5f;
+
+    // if the position is outside the light-space frustum, do NOT put the
+    // fragment in shadow, to prevent the scene from becoming dark "by default"
+    // (note that if you have a spot light, you might want to do the opposite --
+    // that is, everything outside the spot light's cone SHOULD be dark by default)
+    if (position.x < 0.0f || position.x > 1.0f
+        || position.y < 0.0f || position.y > 1.0f
+        || position.z < 0.0f || position.z > 1.0f)
+    {
+        return false;
+    }
+
+    // access the shadow map at this position
+    float shadowMapZ = texture(shadowMap, position.xy).r;
+
+    // add a bias to prevent shadow acne
+    float bias = 0.0001f;
+    shadowMapZ += bias;
+
+    // if the depth stored in the texture is less than the current fragment's depth, we are in shadow
+    return shadowMapZ < position.z;
+}
+///////////////////////////////////////////////////////////////////////////////
 
 void main()
 {
@@ -122,7 +153,7 @@ void main()
     reflectDir = reflect(-spotLight.lightToFragDirection, normalDir);
     spotLight.specular = pow(max(dot(reflectDir, viewDir), 0), spotLight.specularPower) * spotLight.color * spotLight.specularIntensity * intensity * textureSpecular;
 
-
+    
     // Final fragment color
     vec3 ambient = 0.1f * textureDiffuse;
     float d = length(shaderPosition - pointLight.position);
@@ -130,10 +161,11 @@ void main()
     d = length(shaderPosition - spotLight.position);
     float spotLightTotalAttenuation = 1.0 / (spotLight.attenuation.x + spotLight.attenuation.y * d + spotLight.attenuation.z * (d * d));
     
-    
+    if (inShadow())
+        spotLight.diffuse = spotLight.specular = vec3(0.0f, 0.0f, 0.0f);
+
     vec3 light = ambient;
     light += (pointLight.diffuse + pointLight.specular) * pointLightTotalAttenuation;
     light += (spotLight.diffuse + spotLight.specular) * spotLightTotalAttenuation;
     fragmentColor = vec4(light, 1.0);
-    
 }

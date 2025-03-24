@@ -16,6 +16,7 @@ layout (location = 4) in vec3 vertexTangentCoord;
 uniform mat4 projectionTransform;
 uniform mat4 viewTransform;
 uniform mat4 modelTransform;
+uniform mat4 lightTransform;
 
 uniform vec3 pointLightPos;
 uniform vec3 spotLightPos;
@@ -28,6 +29,7 @@ out vec3 shaderPointLightPosition;
 out vec3 shaderSpotLightPosition;
 out vec3 shaderSpotLightDirection;
 out vec3 shaderPosition;
+out vec4 shaderLightSpacePosition;
 
 void main()
 {
@@ -55,4 +57,6 @@ void main()
     shaderSpotLightDirection = vec3(viewTransform * vec4(spotLightDir, 0.0f));
 
     gl_Position = projectionTransform * vec4(shaderPosition, 1.0f);
+
+    shaderLightSpacePosition = lightTransform * modelTransform * vec4(vertexPosition, 1.0f);
 }
