@@ -326,7 +326,7 @@ bool loadTexture(GLuint* texture, std::string name) {
 GLuint shadowMapFbo;      // shadow map framebuffer object
 GLuint shadowMapTexture;  // shadow map texture
 GLuint shadowMapShader;   // shadow map shader
-
+float shadowSharpness = 5.0f;
 bool setupShadowMap()
 {
     // create the FBO for rendering shadows
@@ -590,6 +590,11 @@ bool useNormals = true;
     if (glfwGetKey(pWindow, GLFW_KEY_SPACE) == GLFW_RELEASE){
         makeFlashlightPressed = false;
     }
+
+    if (!(glfwGetKey(pWindow, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) && glfwGetKey(pWindow, GLFW_KEY_LEFT_BRACKET) == GLFW_PRESS) shadowSharpness += 0.1f * deltaTime; 
+         if (!(glfwGetKey(pWindow, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) && glfwGetKey(pWindow, GLFW_KEY_RIGHT_BRACKET) == GLFW_PRESS) shadowSharpness -= 0.1f * deltaTime;
+    // Control shadow sharpness
+    
  }
 
  int current = 0;

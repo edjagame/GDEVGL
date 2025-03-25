@@ -17,6 +17,7 @@
 // }    
 
 
+// From Vertex Shader
 in vec4 shaderColor;
 in vec2 shaderTexCoord;
 in mat3 shaderTBN;
@@ -26,6 +27,7 @@ in vec3 shaderSpotLightDirection;
 in vec3 shaderPosition;
 in vec4 shaderLightSpacePosition;
 
+// Map Uniforms
 uniform sampler2D diffuseMap;
 uniform sampler2D normalMap;
 uniform sampler2D specularMap;
@@ -33,15 +35,21 @@ uniform sampler2D shadowMap;
 
 uniform vec2 windowSize;
 
+//Light Uniforms
 uniform vec3 pointLightColor;
 uniform vec3 pointLightAttenuation;
-
 uniform vec3 spotLightColor;
 uniform float spotLightInnerCutoff;
 uniform float spotLightOuterCutoff;
 uniform vec3 spotLightAttenuation;
 
+// Normal Uniforms
 uniform bool useNormals;
+
+// Shadow Uniforms
+uniform float shadowSharpness;
+uniform bool enableShadows;
+// Camera Uniforms
 uniform vec3 eyePosition;
 
 out vec4 fragmentColor;
@@ -65,7 +73,6 @@ struct lightInstance {
     vec3 ambient;
     vec3 diffuse;
     vec3 specular;
-	
 
 }; 
 
@@ -90,18 +97,20 @@ float percentShadow()
     // access the shadow map at this position
     float percentShadow = 0.0;
     int sampleWidth = 9;
-    float radius = 2.0;
     
     vec2 texelSize = 1.0 / textureSize(shadowMap, 0);
     
     for(int x = -sampleWidth/2; x <= sampleWidth/2; x++) {
         for(int y = -sampleWidth/2; y <= sampleWidth/2; y++) {
-            vec2 offset = vec2(x, y) * texelSize * radius;
-            float shadowMapZ = texture(shadowMap, position.xy + offset).r;
+            vec2 offset = vec2(x, y) * texelSize * shadowSharpness;
+            vec2 sampleCoords = position.xy + offset;
+            if(sampleCoords.x < 0.0 || sampleCoords.x > 1.0 || sampleCoords.y < 0.0 || sampleCoords.y > 1.0) {
+                continue;
+            }
+            float shadowMapZ = texture(shadowMap, sampleCoords).r;
             percentShadow += (shadowMapZ + bias) < position.z ? 1.0 : 0.0;
         }
     }
-    
     percentShadow /= float((sampleWidth + 1) * (sampleWidth + 1));
     // if the depth stored in the texture is less than the current fragment's depth, we are in shadow
     return percentShadow;
@@ -171,10 +180,10 @@ void main()
 
     // Final fragment color
     vec3 ambient = 0.1f * textureDiffuse;
-
-    spotLight.diffuse *= 1.0 - percentShadow();
-    spotLight.specular *= 1.0 - percentShadow();
-    
+    if (enableShadows) {
+        spotLight.diffuse *= 1.0 - percentShadow();
+        spotLight.specular *= 1.0 - percentShadow();
+    }
     vec3 light = ambient;
     light += (pointLight.diffuse + pointLight.specular) * pointLight.attenuationFactor;
     light += (spotLight.diffuse + spotLight.specular) * spotLight.attenuationFactor;

@@ -2,7 +2,8 @@
 * CONTROLS
 * 
 * N -> Toggle normal map
-* 
+* ENTER -> Toggle model movement
+
 * CAMERA MANIPULATION (RELATIVE TO CAMERA SPACE)
 * W -> Move forward
 * S -> Move backward
@@ -38,9 +39,29 @@
 * 
 * SHADOWS
 * P -> Toggle shadows
+* ; -> Make shadows softer
+* ; -> Make shadows sharper
 *
 *****************************************************************************/
-
+/**********
+ * Files to Include:
+ * 
+ * Main.cpp
+ * main.fs
+ * main.vs
+ * mainS.vs
+ * mainS.fs
+ * (Chess | Knuckles | Sonic | Tails)Texture.png
+ * (Chess | Knuckles | Sonic | Tails)NormalMap.png
+ * (Chess | Knuckles | Sonic | Tails)SpecularMap.png
+ * (Chess | Knuckles | Sonic | Tails)Verts.txt
+ * 
+ * Auxilliary:
+ * test
+ * test.cmd
+ * triangleMaker.py
+ * (Chess | Knuckles | Sonic | Tails)Object.obj
+ */
 #include <iostream>
 #include <random>
 #include <vector>
@@ -292,6 +313,7 @@ bool loadTexture(GLuint* texture, std::string name) {
 void drawModel (modelInstance& model, float deltaTime, GLuint shader);
 
 #define SHADOW_SIZE 2048
+float shadowSharpness = 5.0f;
 GLuint shadowMapFbo;      // shadow map framebuffer object
 GLuint shadowMapTexture;  // shadow map texture
 GLuint shadowMapShader;   // shadow map shader
@@ -321,7 +343,7 @@ bool setupShadowMap()
     }
 
     // load the shader program for drawing the shadow map
-    shadowMapShader = gdevLoadShader("demo8s.vs", "demo8s.fs");
+    shadowMapShader = gdevLoadShader("mainS.vs", "mainS.fs");
     if (! shadowMapShader)
         return false;
 
@@ -441,6 +463,9 @@ bool makeFlashlight = false;
 bool makeFlashlightPressed = false;
 bool enableShadows = true;
 bool enableShadowsPressed = false;
+bool moveModels = true;
+bool moveModelsPressed = false;
+
  void movementControls(float deltaTime, std::vector<lightInstance> &lights) {
  
      float cameraSpeed = deltaTime * 20;
@@ -565,6 +590,24 @@ bool enableShadowsPressed = false;
     if (glfwGetKey(pWindow, GLFW_KEY_P) == GLFW_RELEASE){
         enableShadowsPressed = false;
     }
+
+
+    if (glfwGetKey(pWindow, GLFW_KEY_SEMICOLON) == GLFW_PRESS && !(glfwGetKey(pWindow, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)) {
+        shadowSharpness += 1.0f * deltaTime;
+    }
+    if (glfwGetKey(pWindow, GLFW_KEY_SEMICOLON) == GLFW_PRESS && (glfwGetKey(pWindow, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)) {
+        shadowSharpness -= 1.0f * deltaTime;
+    }
+    shadowSharpness = glm::clamp(shadowSharpness, 0.01f, 100.0f);
+
+
+    if (glfwGetKey(pWindow, GLFW_KEY_ENTER) == GLFW_PRESS && !moveModelsPressed){
+        moveModels = !moveModels;
+        moveModelsPressed = true;
+    }
+    if (glfwGetKey(pWindow, GLFW_KEY_ENTER) == GLFW_RELEASE){
+        moveModelsPressed = false;
+    }
  }
 
 glm::vec2 nextKnightMove(int currentRow, int currentCol) {
@@ -613,7 +656,8 @@ glm::vec2 nextRookMove(int currentRow, int currentCol) {
 
 object currentObj = TAILS;
 glm::mat4 calculateModelTransform(modelInstance& instance, float deltaTime, bool enableShadows = true) {
-    instance.t += deltaTime;
+    if (moveModels)
+        instance.t += deltaTime;
 
     float randomOffset = 0.5f * (rand() % 10) / 10.0f;
     const float idleTime = 0.3f;
@@ -858,6 +902,9 @@ void render()
         glUniformMatrix4fv(glGetUniformLocation(shader, "lightTransform"),
                        1, GL_FALSE, glm::value_ptr(lightTransform));
     }
+
+    //SHADOW UNIFORMS
+    glUniform1f(glGetUniformLocation(shader, "shadowSharpness"), shadowSharpness);
 
     //TEXTURE UNIFORMS
     glUniform1i(glGetUniformLocation(shader, "diffuseMap"), 0);
