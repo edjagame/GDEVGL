@@ -14,7 +14,7 @@
 * 
 *
 * M -> Toggle between the light sources
-* SPACE -> Make the current light emanate from camera position
+* SPACE -> Make the current light emanate from camera position (flashlight)
 * 
 * LIGHT MOVEMENT (RELATIVE TO WORLD SPACE)
 * J -> Move in the negative x direction
@@ -36,6 +36,9 @@
 * [ and ] -> decrease or increase the spotlight outer radius
 * Shift + [ and Shift + ] -> decrease or increase the spotlight inner radius
 * 
+* SHADOWS
+* P -> Toggle shadows
+*
 *****************************************************************************/
 
 #include <iostream>
@@ -329,8 +332,6 @@ bool setupShadowMap()
 
 glm::mat4 renderShadowMap(lightInstance& light, float deltaTime)
 {
-    std::cout << light.position.x << " " << light.position.y << " " << light.position.z << std::endl;
-    std::cout << light.direction.x << " " << light.direction.y << " " << light.direction.z << std::endl;
     // use the shadow framebuffer for drawing the shadow map
     glBindFramebuffer(GL_FRAMEBUFFER, shadowMapFbo);
 
@@ -421,6 +422,9 @@ bool setup()
         return false;
     ///////////////////////////////////////////////////////////////////////////
 
+    // UNIFORMS
+    glUniform2i(glGetUniformLocation(shader, "windowSize"), WINDOW_WIDTH, WINDOW_HEIGHT);
+
     return true;
 }
 
@@ -430,21 +434,22 @@ glm::vec3 cameraFront = glm::vec3(0.0f, -1.0f, -3.0f);
 glm::vec3 cameraUp    = glm::vec3(0.0f, 1.0f, 0.0f);
 
 bool useNormals = true;
- bool useNormalsPressed = false;
- int currentLight = 1;
- bool currentLightPressed = false;
- bool makeFlashlight = false;
- bool makeFlashlightPressed = false;
- 
+bool useNormalsPressed = false;
+int currentLight = 1;
+bool currentLightPressed = false;
+bool makeFlashlight = false;
+bool makeFlashlightPressed = false;
+bool enableShadows = true;
+bool enableShadowsPressed = false;
  void movementControls(float deltaTime, std::vector<lightInstance> &lights) {
  
      float cameraSpeed = deltaTime * 20;
      
      // Scene Bounds
      const float MIN_Y = 3.0f;
-     const float MAX_Y = 40.0f;
-     const float MIN_XZ = -40.0f;
-     const float MAX_XZ = 40.0f;
+     const float MAX_Y = 100.0f;
+     const float MIN_XZ = -70.0f;
+     const float MAX_XZ = 70.0f;
  
      // Move camera
      if (glfwGetKey(pWindow, GLFW_KEY_W) == GLFW_PRESS) cameraPos += cameraSpeed * cameraFront;
@@ -491,8 +496,8 @@ bool useNormals = true;
  
      const float LIGHT_MIN_Y = 3.0f;
      const float LIGHT_MAX_Y = 100.0f;
-     const float LIGHT_MIN_XZ = -30.0f;
-     const float LIGHT_MAX_XZ = 30.0f;
+     const float LIGHT_MIN_XZ = -70.0f;
+     const float LIGHT_MAX_XZ = 70.0f;
  
      lights[currentLight].position.y = glm::clamp(lights[currentLight].position.y, LIGHT_MIN_Y, LIGHT_MAX_Y);
      lights[currentLight].position.x = glm::clamp(lights[currentLight].position.x, LIGHT_MIN_XZ, LIGHT_MAX_XZ);
@@ -552,6 +557,14 @@ bool useNormals = true;
     if (glfwGetKey(pWindow, GLFW_KEY_SPACE) == GLFW_RELEASE){
         makeFlashlightPressed = false;
     }
+
+    if (glfwGetKey(pWindow, GLFW_KEY_P) == GLFW_PRESS && !enableShadowsPressed){
+        enableShadows = !enableShadows;
+        enableShadowsPressed = true;
+    }
+    if (glfwGetKey(pWindow, GLFW_KEY_P) == GLFW_RELEASE){
+        enableShadowsPressed = false;
+    }
  }
 
 glm::vec2 nextKnightMove(int currentRow, int currentCol) {
@@ -599,7 +612,7 @@ glm::vec2 nextRookMove(int currentRow, int currentCol) {
 }
 
 object currentObj = TAILS;
-glm::mat4 calculateModelTransform(modelInstance& instance, float deltaTime) {
+glm::mat4 calculateModelTransform(modelInstance& instance, float deltaTime, bool enableShadows = true) {
     instance.t += deltaTime;
 
     float randomOffset = 0.5f * (rand() % 10) / 10.0f;
@@ -758,9 +771,11 @@ void drawModel (modelInstance& model, float deltaTime, GLuint shader) {
             glBindTexture(GL_TEXTURE_2D, chessTex[2]);
             break;
     }
-    glActiveTexture(GL_TEXTURE3);
-    glBindTexture(GL_TEXTURE_2D, shadowMapTexture);
 
+    if (enableShadows) {
+        glActiveTexture(GL_TEXTURE3);
+        glBindTexture(GL_TEXTURE_2D, shadowMapTexture);
+    }
     // ... then draw our triangles
     glBindVertexArray(vao);
     switch (model.obj) {
@@ -804,7 +819,9 @@ void render()
 
     ///////////////////////////////////////////////////////////////////////////
     // draw the shadow map
-    glm::mat4 lightTransform = renderShadowMap(lights[1], deltaTime);
+    glm::mat4 lightTransform;
+    if (enableShadows) lightTransform = renderShadowMap(lights[1], deltaTime);
+    
     ///////////////////////////////////////////////////////////////////////////
 
     // using our shader program...
@@ -815,7 +832,7 @@ void render()
     projectionTransform = glm::perspective(glm::radians(fov),                   // fov
                                            (float) WINDOW_WIDTH / WINDOW_HEIGHT,  // aspect ratio
                                            0.1f,                                  // near plane
-                                           200.0f);                               // far plane
+                                           300.0f);                               // far plane
     glUniformMatrix4fv(glGetUniformLocation(shader, "projectionTransform"),
                        1, GL_FALSE, glm::value_ptr(projectionTransform));
 
@@ -835,15 +852,20 @@ void render()
     }
 
     
-    //UNIFORMS
-    glUniformMatrix4fv(glGetUniformLocation(shader, "lightTransform"),
+    //SHADOW UNIFORMS
+    glUniform1i(glGetUniformLocation(shader, "enableShadows"), enableShadows);
+    if (enableShadows) {
+        glUniformMatrix4fv(glGetUniformLocation(shader, "lightTransform"),
                        1, GL_FALSE, glm::value_ptr(lightTransform));
+    }
 
+    //TEXTURE UNIFORMS
     glUniform1i(glGetUniformLocation(shader, "diffuseMap"), 0);
     glUniform1i(glGetUniformLocation(shader, "normalMap"),  1);
     glUniform1i(glGetUniformLocation(shader, "specularMap"), 2);
     glUniform1i(glGetUniformLocation(shader, "shadowMap"), 3);
 
+    //LIGHT UNIFORMS
     glUniform3fv(glGetUniformLocation(shader, "pointLightPos"), 1, glm::value_ptr(lights[0].position));
     glUniform3fv(glGetUniformLocation(shader, "pointLightColor"), 1, glm::value_ptr(lights[0].color));
     glUniform3fv(glGetUniformLocation(shader, "pointLightAttenuation"), 1, glm::value_ptr(lights[0].attenuation));
@@ -854,8 +876,6 @@ void render()
     glUniform1f(glGetUniformLocation(shader, "spotLightInnerCutoff"), lights[1].innerCutoff);
     glUniform1f(glGetUniformLocation(shader, "spotLightOuterCutoff"), lights[1].outerCutoff);
     glUniform3fv(glGetUniformLocation(shader, "eyePosition"), 1, glm::value_ptr(cameraPos));
-
-    
 }
 
 /*****************************************************************************/
