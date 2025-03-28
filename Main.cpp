@@ -1,6 +1,11 @@
 /******************************************************************************
 * CONTROLS
 * 
+* NEW TO EXERCISE 3
+* P -> Toggle shadows
+* ; -> Make shadows softer
+* SHIFT + ; -> Make shadows sharper
+* 
 * N -> Toggle normal map
 * ENTER -> Toggle model movement
 
@@ -593,10 +598,10 @@ bool moveModelsPressed = false;
 
 
     if (glfwGetKey(pWindow, GLFW_KEY_SEMICOLON) == GLFW_PRESS && !(glfwGetKey(pWindow, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)) {
-        shadowSharpness += 1.0f * deltaTime;
+        shadowSharpness += 5.0f * deltaTime;
     }
     if (glfwGetKey(pWindow, GLFW_KEY_SEMICOLON) == GLFW_PRESS && (glfwGetKey(pWindow, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)) {
-        shadowSharpness -= 1.0f * deltaTime;
+        shadowSharpness -= 5.0f * deltaTime;
     }
     shadowSharpness = glm::clamp(shadowSharpness, 0.01f, 100.0f);
 
