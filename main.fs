@@ -96,22 +96,32 @@ float percentShadow()
     float bias = 0.0001f;
     // access the shadow map at this position
     float percentShadow = 0.0;
-    int sampleWidth = 9;
-    
+    int filterWidth = 7;
+    int halfWidth = filterWidth / 2;
     vec2 texelSize = 1.0 / textureSize(shadowMap, 0);
     
-    for(int x = -sampleWidth/2; x <= sampleWidth/2; x++) {
-        for(int y = -sampleWidth/2; y <= sampleWidth/2; y++) {
+
+    for(int x = -halfWidth; x <= -halfWidth + filterWidth; x++) {
+        for(int y = -halfWidth; y <= -halfWidth + filterWidth; y++) {
             vec2 offset = vec2(x, y) * texelSize * shadowSharpness;
-            vec2 sampleCoords = position.xy + offset;
-            if(sampleCoords.x < 0.0 || sampleCoords.x > 1.0 || sampleCoords.y < 0.0 || sampleCoords.y > 1.0) {
-                continue;
+            float shadowDepth = texture(shadowMap, position.xy + offset).r;
+
+            if (shadowDepth + bias < position.z) {
+                percentShadow += 1.0f;
+            } else {
+                percentShadow += 0.0f;
             }
-            float shadowMapZ = texture(shadowMap, sampleCoords).r;
-            percentShadow += (shadowMapZ + bias) < position.z ? 1.0 : 0.0;
         }
     }
-    percentShadow /= float((sampleWidth + 1) * (sampleWidth + 1));
+
+    if (percentShadow == 0.0f) {
+        return 0.0f;
+    }
+    if (percentShadow == float((filterWidth + 1) * (filterWidth + 1))) {
+        return 1.0f;
+    }
+
+    percentShadow /= float((filterWidth + 1) * (filterWidth + 1));
     // if the depth stored in the texture is less than the current fragment's depth, we are in shadow
     return percentShadow;
 }
@@ -179,7 +189,7 @@ void main()
     // spotLight.specular *= 1.0 - percentShadow();
 
     // Final fragment color
-    vec3 ambient = 0.1f * textureDiffuse;
+    vec3 ambient = 0.0f * textureDiffuse;
     if (enableShadows) {
         spotLight.diffuse *= 1.0 - percentShadow();
         spotLight.specular *= 1.0 - percentShadow();

@@ -239,7 +239,7 @@ lightInstance pointLight = {
     0,                              // Type
     glm::vec3(30.0f, 70.0f, 30.0f), // Position
     glm::vec3(1.0),                 // Color
-    glm::vec3(1.0, 0.014, 0.00014), // Attenuation
+    glm::vec3(1.0, 0.0014, 0.000014), // Attenuation
     glm::vec3(1.0),                 // Direction
     0,                              // Inner Cutoff
     0                               // Outer Cutoff
@@ -314,6 +314,107 @@ bool loadTexture(GLuint* texture, std::string name) {
 // arrays, shader programs, etc.; returns true if successful, false otherwise
 
 ///////////////////////////////////////////////////////////////////////////////
+// SKYBOX CODE
+GLuint skyboxVAO, skyboxVBO;
+GLuint skyboxTexture;
+GLuint skyboxShader;
+
+float skyboxVertices[] = {
+    // positions          
+    -1.0f,  1.0f, -1.0f,
+    -1.0f, -1.0f, -1.0f,
+     1.0f, -1.0f, -1.0f,
+     1.0f, -1.0f, -1.0f,
+     1.0f,  1.0f, -1.0f,
+    -1.0f,  1.0f, -1.0f,
+
+    -1.0f, -1.0f,  1.0f,
+    -1.0f, -1.0f, -1.0f,
+    -1.0f,  1.0f, -1.0f,
+    -1.0f,  1.0f, -1.0f,
+    -1.0f,  1.0f,  1.0f,
+    -1.0f, -1.0f,  1.0f,
+
+     1.0f, -1.0f, -1.0f,
+     1.0f, -1.0f,  1.0f,
+     1.0f,  1.0f,  1.0f,
+     1.0f,  1.0f,  1.0f,
+     1.0f,  1.0f, -1.0f,
+     1.0f, -1.0f, -1.0f,
+
+    -1.0f, -1.0f,  1.0f,
+    -1.0f,  1.0f,  1.0f,
+     1.0f,  1.0f,  1.0f,
+     1.0f,  1.0f,  1.0f,
+     1.0f, -1.0f,  1.0f,
+    -1.0f, -1.0f,  1.0f,
+
+    -1.0f,  1.0f, -1.0f,
+     1.0f,  1.0f, -1.0f,
+     1.0f,  1.0f,  1.0f,
+     1.0f,  1.0f,  1.0f,
+    -1.0f,  1.0f,  1.0f,
+    -1.0f,  1.0f, -1.0f,
+
+    -1.0f, -1.0f, -1.0f,
+    -1.0f, -1.0f,  1.0f,
+     1.0f, -1.0f, -1.0f,
+     1.0f, -1.0f, -1.0f,
+    -1.0f, -1.0f,  1.0f,
+     1.0f, -1.0f,  1.0f
+};
+
+bool setupSkybox() {
+    // Create VAO and VBO for skybox
+    glGenVertexArrays(1, &skyboxVAO);
+    glGenBuffers(1, &skyboxVBO);
+    glBindVertexArray(skyboxVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, skyboxVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(skyboxVertices), &skyboxVertices, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+
+    // Load skybox shader
+    skyboxShader = gdevLoadShader("skyboxShader.vs", "skyboxShader.fs");
+    if (!skyboxShader)
+        return false;
+
+    // Load skybox textures
+    std::vector<std::string> faces = {
+        "skyboxRight.jpg",
+        "skyboxLeft.jpg",
+        "skyboxBottom.jpg",
+        "skyboxTop.jpg",
+        "skyboxFront.jpg", 
+        "skyboxBack.jpg"   
+    };
+
+    glGenTextures(1, &skyboxTexture);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, skyboxTexture);
+
+    int width, height, nrChannels;
+    unsigned char *data;  
+    for(unsigned int i = 0; i < faces.size(); i++)
+    {
+        data = stbi_load(faces[i].c_str(), &width, &height, &nrChannels, 0);
+        glTexImage2D(
+            GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 
+            0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data
+        );
+    }
+
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);  
+    return true;
+}
+
+
+///////////////////////////////////////////////////////////////////////////////
+
+///////////////////////////////////////////////////////////////////////////////
 // SHADOW MAPPING CODE
 void drawModel (modelInstance& model, float deltaTime, GLuint shader);
 
@@ -347,11 +448,16 @@ bool setupShadowMap()
         return false;
     }
 
+    if (!setupSkybox()) {
+        return false;
+    }
+    
     // load the shader program for drawing the shadow map
-    shadowMapShader = gdevLoadShader("mainS.vs", "mainS.fs");
+    shadowMapShader = gdevLoadShader("mainShadow.vs", "mainShadow.fs");
     if (! shadowMapShader)
         return false;
 
+    
     // set the framebuffer back to the default onscreen buffer
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     return true;
@@ -431,7 +537,6 @@ bool setup()
     if (!loadTexture(tailsTex, "Tails")) return false;
     if (!loadTexture(chessTex, "Chess")) return false;
 
-    
 
     // enable OpenGL blending so that texels with alpha values less than one are drawn transparent
     // (you can omit these lines if you don't use alpha)
@@ -866,6 +971,23 @@ void render()
     glClearColor(0.0f, 0.0f, 0.05f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+    // ... set up the projection matrix...
+    glm::mat4 projectionTransform;
+    projectionTransform = glm::perspective(glm::radians(fov),                   // fov
+                                            (float) WINDOW_WIDTH / WINDOW_HEIGHT,  // aspect ratio
+                                            0.1f,                                  // near plane
+                                            300.0f);                               // far plane
+
+
+    // ... set up the view matrix...
+    glm::mat4 viewTransform;
+    viewTransform = glm::lookAt(cameraPos,   // eye position
+                                cameraPos + cameraFront,   // center position
+                                cameraUp);  // up vector
+
+    
+
+    
     ///////////////////////////////////////////////////////////////////////////
     // draw the shadow map
     glm::mat4 lightTransform;
@@ -875,31 +997,17 @@ void render()
 
     // using our shader program...
     glUseProgram(shader);
-    
-    // ... set up the projection matrix...
-    glm::mat4 projectionTransform;
-    projectionTransform = glm::perspective(glm::radians(fov),                   // fov
-                                           (float) WINDOW_WIDTH / WINDOW_HEIGHT,  // aspect ratio
-                                           0.1f,                                  // near plane
-                                           300.0f);                               // far plane
     glUniformMatrix4fv(glGetUniformLocation(shader, "projectionTransform"),
-                       1, GL_FALSE, glm::value_ptr(projectionTransform));
-
-    // ... set up the view matrix...
-    glm::mat4 viewTransform;
-    viewTransform = glm::lookAt(cameraPos,   // eye position
-                                cameraPos + cameraFront,   // center position
-                                cameraUp);  // up vector
-
+                        1, GL_FALSE, glm::value_ptr(projectionTransform));
     glUniformMatrix4fv(glGetUniformLocation(shader, "viewTransform"),
-                       1, GL_FALSE, glm::value_ptr(viewTransform));
+                        1, GL_FALSE, glm::value_ptr(viewTransform));
 
-
+     
+    
     // draw the models
     for (modelInstance& model : models) {
         drawModel(model, deltaTime, shader);
     }
-
     
     //SHADOW UNIFORMS
     glUniform1i(glGetUniformLocation(shader, "enableShadows"), enableShadows);
@@ -907,8 +1015,6 @@ void render()
         glUniformMatrix4fv(glGetUniformLocation(shader, "lightTransform"),
                        1, GL_FALSE, glm::value_ptr(lightTransform));
     }
-
-    //SHADOW UNIFORMS
     glUniform1f(glGetUniformLocation(shader, "shadowSharpness"), shadowSharpness);
 
     //TEXTURE UNIFORMS
@@ -928,6 +1034,28 @@ void render()
     glUniform1f(glGetUniformLocation(shader, "spotLightInnerCutoff"), lights[1].innerCutoff);
     glUniform1f(glGetUniformLocation(shader, "spotLightOuterCutoff"), lights[1].outerCutoff);
     glUniform3fv(glGetUniformLocation(shader, "eyePosition"), 1, glm::value_ptr(cameraPos));
+
+    ///////////////////////////////////////////////////////////////////////////
+    // draw the skybox
+
+    glDepthFunc(GL_LEQUAL);  // Change depth function so depth test passes when values are equal to depth buffer's content
+    glDisable(GL_CULL_FACE); // Disable culling for skybox
+    glUseProgram(skyboxShader);
+
+    // Remove translation from view matrix for skybox
+    glm::mat4 skyboxView = glm::mat4(glm::mat3(viewTransform));
+    glUniformMatrix4fv(glGetUniformLocation(skyboxShader, "viewTransform"), 1, GL_FALSE, glm::value_ptr(skyboxView));
+    glUniformMatrix4fv(glGetUniformLocation(skyboxShader, "projectionTransform"), 1, GL_FALSE, glm::value_ptr(projectionTransform));
+
+    glBindVertexArray(skyboxVAO);
+    glActiveTexture(GL_TEXTURE0); // Use texture unit 0 for skybox
+    glBindTexture(GL_TEXTURE_CUBE_MAP, skyboxTexture);
+    glUniform1i(glGetUniformLocation(skyboxShader, "skybox"), 0); // Tell shader skybox sampler is on unit 0
+    glDrawArrays(GL_TRIANGLES, 0, 36);
+
+    glEnable(GL_CULL_FACE); // Re-enable culling
+    glDepthFunc(GL_LESS); // Set depth function back to default
+    ///////////////////////////////////////////////////////////////////////////
 }
 
 /*****************************************************************************/
