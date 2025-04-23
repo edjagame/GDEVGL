@@ -27,6 +27,8 @@ in vec3 shaderSpotLightDirection;
 in vec3 shaderPosition;
 in vec4 shaderLightSpacePosition;
 
+in vec4 prevPos;
+in vec4 currPos;
 // Map Uniforms
 uniform sampler2D diffuseMap;
 uniform sampler2D normalMap;
@@ -52,7 +54,8 @@ uniform bool enableShadows;
 // Camera Uniforms
 uniform vec3 eyePosition;
 
-out vec4 fragmentColor;
+layout(location = 0) out vec4 fragmentColor;
+layout(location = 1) out vec2 velocity;
 
 struct lightInstance {
     vec3 position;
@@ -199,4 +202,16 @@ void main()
     light += (spotLight.diffuse + spotLight.specular) * spotLight.attenuationFactor;
 
     fragmentColor = vec4(light, 1.0f);
+
+
+
+    
+    float e = 0.0001;
+    if (currPos.w == 0.0 || prevPos.w == 0.0) {
+        velocity = vec2(0.0, 0.0);
+    } else {
+        vec2 currScreenPos = currPos.xy / currPos.w;
+        vec2 prevScreenPos = prevPos.xy / prevPos.w;
+        velocity = (currScreenPos - prevScreenPos) * 0.5 + 0.5;
+    }
 }

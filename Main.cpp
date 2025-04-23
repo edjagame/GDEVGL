@@ -171,6 +171,8 @@ struct modelInstance
     glm::vec2 coords;
     glm::vec2 nextCoords;
     float t = 0;
+
+    glm::mat4 prevModelTransform = glm::mat4(1.0f);
 };
 std::vector<modelInstance> models = {
     {   
@@ -426,7 +428,7 @@ float screenQuadVertices[] =   // vertices for a fullscreen quadrilateral
 GLuint fbo;         // framebuffer object
 GLuint fboTexture;  // texture for the framebuffer
 GLuint fboDepthTexture; // depth texture for the framebuffer
-GLuint fboRbo;      // renderbuffer for the framebuffer
+GLuint fboVelocityTexture; // velocity texture for the framebuffer
 GLuint fboVao;      // vertex array object for the fullscreen quadrilateral
 GLuint fboVbo;      // vertex buffer object for the fullscreen quadrilateral
 GLuint fboShader;   // shader for the fullscreen quadrilateral
@@ -440,18 +442,32 @@ bool setupFbo()
     // attach a texture object to the framebuffer
     glGenTextures(1, &fboTexture);
     glBindTexture(GL_TEXTURE_2D, fboTexture);
-    // Use initial window size here, will be resized in handleResize
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, WINDOW_WIDTH, WINDOW_HEIGHT, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, fboTexture, 0);
 
-    // attach a renderbuffer object (containing a depth buffer) to the framebuffer
-    glGenRenderbuffers(1, &fboRbo);
-    glBindRenderbuffer(GL_RENDERBUFFER, fboRbo);
-    // Use initial window size here, will be resized in handleResize
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT16, WINDOW_WIDTH, WINDOW_HEIGHT);
-    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, fboRbo);
+    // attach a depth texture object to the framebuffer
+    glGenTextures(1, &fboDepthTexture);
+    glBindTexture(GL_TEXTURE_2D, fboDepthTexture);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24, WINDOW_WIDTH, WINDOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, fboDepthTexture, 0);
+
+    // attach a velocity texture object to the framebuffer
+    glGenTextures(1, &fboVelocityTexture);
+    glBindTexture(GL_TEXTURE_2D, fboVelocityTexture);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RG16F, WINDOW_WIDTH, WINDOW_HEIGHT, 0, GL_RG, GL_FLOAT, NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    // Attach as another color attachment
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, fboVelocityTexture, 0);
+
+    GLuint drawBuffers[2] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1};
+    glDrawBuffers(2, drawBuffers);
 
     // check if we did everything right
     if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
@@ -483,9 +499,10 @@ bool setupFbo()
 
 void renderFbo()
 {
+
     // set the framebuffer back to the default onscreen buffer
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
+    
     // always draw to the whole window
     int width, height;
     glfwGetFramebufferSize(pWindow, &width, &height); // Get current size
@@ -501,7 +518,14 @@ void renderFbo()
     // ... set the active texture to our framebuffer texture...
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, fboTexture);
+    glUniform1i(glGetUniformLocation(fboShader, "colorTexture"), 0);
+    
+    // ... set the active texture to our framebuffer velocity texture...
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, fboVelocityTexture);
+    glUniform1i(glGetUniformLocation(fboShader, "velocityTexture"), 1);
 
+    glUniform2fv(glGetUniformLocation(fboShader, "screenSize"), 1, glm::value_ptr(glm::vec2(width, height)));
     // ... then draw our fullscreen quadrilateral
     glBindVertexArray(fboVao);
     glDrawArrays(GL_TRIANGLE_FAN, 0, sizeof(screenQuadVertices) / (4 * sizeof(float)));
@@ -595,7 +619,7 @@ glm::mat4 renderShadowMap(lightInstance& light, float deltaTime)
     for (modelInstance& model : models) {
         drawModel(model, deltaTime, shadowMapShader);
     }
-
+    
     // set the framebuffer back to the default onscreen buffer
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
@@ -637,7 +661,7 @@ bool setup()
 
     // enable OpenGL blending so that texels with alpha values less than one are drawn transparent
     // (you can omit these lines if you don't use alpha)
-    glEnable(GL_BLEND);
+    glDisable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     // the next line will enable z-buffer depth testing to properly draw objects on top of each other
@@ -979,9 +1003,14 @@ glm::mat4 calculateModelTransform(modelInstance& instance, float deltaTime, bool
 }
 
 void drawModel (modelInstance& model, float deltaTime, GLuint shader) {
+
+    glUniformMatrix4fv(glGetUniformLocation(shader, "prevModelTransform"),
+                    1, GL_FALSE, glm::value_ptr(model.prevModelTransform));
+
     glm::mat4 modelTransform = calculateModelTransform(model, deltaTime);
     glUniformMatrix4fv(glGetUniformLocation(shader, "modelTransform"),
                         1, GL_FALSE, glm::value_ptr(modelTransform));
+    
     // ... set the active texture...
     glActiveTexture(GL_TEXTURE0);
     switch (model.obj) {
@@ -1049,10 +1078,16 @@ void drawModel (modelInstance& model, float deltaTime, GLuint shader) {
                 glDrawArrays(GL_TRIANGLES, tailsVertices.size() + sonicVertices.size() + knucklesVertices.size(), chessVertices.size());
                 break;
      }
+
+    model.prevModelTransform = modelTransform;
 }
 // called by the main function to do rendering per frame
 int current = 0;
 double previousTime = 0.0;
+glm::mat4 prevViewTransform = glm::mat4(1.0f);
+glm::mat4 prevProjTransform = glm::mat4(1.0f);
+glm::mat4 viewTransform = glm::mat4(1.0f);
+glm::mat4 projectionTransform = glm::mat4(1.0f);
 void render()
 {
     // randomizes the random seed
@@ -1076,13 +1111,11 @@ void render()
     // glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     // ... set up the projection matrix...
-    glm::mat4 projectionTransform;
     projectionTransform = glm::perspective(glm::radians(fov),                   // fov
                                             (float) WINDOW_WIDTH / WINDOW_HEIGHT,  // aspect ratio
                                             0.1f,                                  // near plane
                                             300.0f);                               // far plane
     // ... set up the view matrix...
-    glm::mat4 viewTransform;
     viewTransform = glm::lookAt(cameraPos,   // eye position
                                 cameraPos + cameraFront,   // center position
                                 cameraUp);  // up vector
@@ -1106,10 +1139,13 @@ void render()
     // to recreate the custom framebuffer texture every time the window is
     // resized)
     glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
+
+    GLuint attachments[2] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
+    glDrawBuffers(2, attachments);
     ///////////////////////////////////////////////////////////////////////////
 
     // clear the whole frame
-    glClearColor(0.0f, 1.0f, 0.0f, 1.0f);
+    glClearColor(0.5f, 0.5f, 1.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     // using our shader program...
@@ -1118,7 +1154,10 @@ void render()
                         1, GL_FALSE, glm::value_ptr(projectionTransform));
     glUniformMatrix4fv(glGetUniformLocation(shader, "viewTransform"),
                         1, GL_FALSE, glm::value_ptr(viewTransform));
-
+    glUniformMatrix4fv(glGetUniformLocation(shader, "prevViewTransform"),
+                        1, GL_FALSE, glm::value_ptr(prevViewTransform));
+    glUniformMatrix4fv(glGetUniformLocation(shader, "prevProjTransform"),
+                        1, GL_FALSE, glm::value_ptr(prevProjTransform));
     
 
     //SHADOW UNIFORMS
@@ -1149,6 +1188,7 @@ void render()
     glUniform1f(glGetUniformLocation(shader, "spotLightOuterCutoff"), lights[1].outerCutoff);
     glUniform3fv(glGetUniformLocation(shader, "eyePosition"), 1, glm::value_ptr(cameraPos));
 
+    
     // draw the models
     for (modelInstance& model : models) {
         drawModel(model, deltaTime, shader);
@@ -1156,7 +1196,6 @@ void render()
 
     /////////////////////////////////////////////////////////////////////////
     // draw the skybox
-
     glDepthFunc(GL_LEQUAL);  // Change depth function so depth test passes when values are equal to depth buffer's content
     glDisable(GL_CULL_FACE); // Disable culling for skybox
     glUseProgram(skyboxShader);
@@ -1178,10 +1217,8 @@ void render()
     // Render the fbo
     renderFbo();
 
-
-    
-
-    
+    prevProjTransform = projectionTransform;
+    prevViewTransform = viewTransform;
 }
 
 /*****************************************************************************/

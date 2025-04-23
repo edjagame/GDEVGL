@@ -18,6 +18,11 @@ uniform mat4 viewTransform;
 uniform mat4 modelTransform;
 uniform mat4 lightTransform;
 
+uniform mat4 prevProjTransform;
+uniform mat4 prevViewTransform;
+uniform mat4 prevModelTransform;
+
+
 uniform vec3 pointLightPos;
 uniform vec3 spotLightPos;
 uniform vec3 spotLightDir;
@@ -31,11 +36,17 @@ out vec3 shaderSpotLightDirection;
 out vec3 shaderPosition;
 out vec4 shaderLightSpacePosition;
 
+out vec4 currPos;
+out vec4 prevPos;
 void main()
 {
     // combine the model and view transforms to get the camera space transform
     mat4 modelViewTransform = viewTransform * modelTransform;
-    
+    mat4 prevModelViewTransform = prevViewTransform * prevModelTransform;
+
+    mat4 mvp = projectionTransform * modelViewTransform;
+    mat4 prevMvp = prevProjTransform * prevModelViewTransform;
+
     shaderColor = vertexColor;
 
     // compute the vertex's attributes in camera space
@@ -56,7 +67,9 @@ void main()
     shaderSpotLightPosition = vec3(viewTransform * vec4(spotLightPos, 1.0f));
     shaderSpotLightDirection = vec3(viewTransform * vec4(spotLightDir, 0.0f));
 
-    gl_Position = projectionTransform * vec4(shaderPosition, 1.0f);
+    currPos = mvp * vec4(vertexPosition, 1.0f);
+    prevPos = prevMvp * vec4(vertexPosition, 1.0f);
+    gl_Position = currPos;
 
     shaderLightSpacePosition = lightTransform * modelTransform * vec4(vertexPosition, 1.0f);
 }
