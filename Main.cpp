@@ -411,7 +411,104 @@ bool setupSkybox() {
     return true;
 }
 
+///////////////////////////////////////////////////////////////////////////////
+// CUSTOM FRAMEBUFFER CODE
 
+float screenQuadVertices[] =   // vertices for a fullscreen quadrilateral
+{
+    // position   texcoords
+    -1.0f, -1.0f, 0.0f, 0.0f,
+     1.0f, -1.0f, 1.0f, 0.0f,
+     1.0f,  1.0f, 1.0f, 1.0f,
+    -1.0f,  1.0f, 0.0f, 1.0f
+};
+
+GLuint fbo;         // framebuffer object
+GLuint fboTexture;  // texture for the framebuffer
+GLuint fboDepthTexture; // depth texture for the framebuffer
+GLuint fboRbo;      // renderbuffer for the framebuffer
+GLuint fboVao;      // vertex array object for the fullscreen quadrilateral
+GLuint fboVbo;      // vertex buffer object for the fullscreen quadrilateral
+GLuint fboShader;   // shader for the fullscreen quadrilateral
+
+bool setupFbo()
+{
+    // create the framebuffer object
+    glGenFramebuffers(1, &fbo);
+    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+
+    // attach a texture object to the framebuffer
+    glGenTextures(1, &fboTexture);
+    glBindTexture(GL_TEXTURE_2D, fboTexture);
+    // Use initial window size here, will be resized in handleResize
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, WINDOW_WIDTH, WINDOW_HEIGHT, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, fboTexture, 0);
+
+    // attach a renderbuffer object (containing a depth buffer) to the framebuffer
+    glGenRenderbuffers(1, &fboRbo);
+    glBindRenderbuffer(GL_RENDERBUFFER, fboRbo);
+    // Use initial window size here, will be resized in handleResize
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT16, WINDOW_WIDTH, WINDOW_HEIGHT);
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, fboRbo);
+
+    // check if we did everything right
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+    {
+        std::cout << "Could not create custom framebuffer.\n";
+        return false;
+    }
+
+    // create the VAO and VBO for the fullscreen quadrilateral
+    glGenVertexArrays(1, &fboVao);
+    glGenBuffers(1, &fboVbo);
+    glBindVertexArray(fboVao);
+    glBindBuffer(GL_ARRAY_BUFFER, fboVbo);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(screenQuadVertices), screenQuadVertices, GL_STATIC_DRAW);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*) 0);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*) (2 * sizeof(float)));
+    glEnableVertexAttribArray(0);
+    glEnableVertexAttribArray(1);
+
+    // load the shader program for the fullscreen quadrilateral
+    fboShader = gdevLoadShader("fbo.vs", "fbo.fs");
+    if (! fboShader)
+        return false;
+
+    // set the framebuffer back to the default onscreen buffer
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    return true;
+}
+
+void renderFbo()
+{
+    // set the framebuffer back to the default onscreen buffer
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+    // always draw to the whole window
+    int width, height;
+    glfwGetFramebufferSize(pWindow, &width, &height); // Get current size
+    glViewport(0, 0, width, height); // Use current size
+
+    // clear the onscreen buffer
+    // (the clear color does not matter because we're filling the window with our framebuffer texture)
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    // using the framebuffer shader...
+    glUseProgram(fboShader);
+
+    // ... set the active texture to our framebuffer texture...
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, fboTexture);
+
+    // ... then draw our fullscreen quadrilateral
+    glBindVertexArray(fboVao);
+    glDrawArrays(GL_TRIANGLE_FAN, 0, sizeof(screenQuadVertices) / (4 * sizeof(float)));
+}
+
+// CUSTOM FRAMEBUFFER CODE
+///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -547,6 +644,12 @@ bool setup()
     // (but wait, will this actually work properly with this demo?...)
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
+
+    ///////////////////////////////////////////////////////////////////////////
+    // setup the custom framebuffer
+    if (! setupFbo())
+        return false;
+    ///////////////////////////////////////////////////////////////////////////
 
     ///////////////////////////////////////////////////////////////////////////
     // setup shadow rendering
@@ -961,15 +1064,16 @@ void render()
     previousTime = currentTime;
     
     movementControls(deltaTime, lights);
-    glUniform1i(glGetUniformLocation(shader, "useNormals"), useNormals);
+    
     
     if (makeFlashlight) {
            lights[1].position = cameraPos;
            lights[1].direction = cameraFront;
     }
-    // clear the whole frame
-    glClearColor(0.0f, 0.0f, 0.05f, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    // // clear the whole frame
+    // glClearColor(0.98f, 1.0f, 0.95f, 1.0f);
+    // glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     // ... set up the projection matrix...
     glm::mat4 projectionTransform;
@@ -977,15 +1081,11 @@ void render()
                                             (float) WINDOW_WIDTH / WINDOW_HEIGHT,  // aspect ratio
                                             0.1f,                                  // near plane
                                             300.0f);                               // far plane
-
-
     // ... set up the view matrix...
     glm::mat4 viewTransform;
     viewTransform = glm::lookAt(cameraPos,   // eye position
                                 cameraPos + cameraFront,   // center position
                                 cameraUp);  // up vector
-
-    
 
     
     ///////////////////////////////////////////////////////////////////////////
@@ -994,6 +1094,23 @@ void render()
     if (enableShadows) lightTransform = renderShadowMap(lights[1], deltaTime);
     
     ///////////////////////////////////////////////////////////////////////////
+    
+    ///////////////////////////////////////////////////////////////////////////
+    // use the custom framebuffer for subsequent rendering commands
+    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+
+    // make sure to render to the entire window
+    // (note that we use the hardcoded window size here, since the custom
+    // framebuffer was initialized using this size; if you want your program
+    // to use the real resolution of the window, you would have to write code
+    // to recreate the custom framebuffer texture every time the window is
+    // resized)
+    glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
+    ///////////////////////////////////////////////////////////////////////////
+
+    // clear the whole frame
+    glClearColor(0.0f, 1.0f, 0.0f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     // using our shader program...
     glUseProgram(shader);
@@ -1002,13 +1119,8 @@ void render()
     glUniformMatrix4fv(glGetUniformLocation(shader, "viewTransform"),
                         1, GL_FALSE, glm::value_ptr(viewTransform));
 
-     
     
-    // draw the models
-    for (modelInstance& model : models) {
-        drawModel(model, deltaTime, shader);
-    }
-    
+
     //SHADOW UNIFORMS
     glUniform1i(glGetUniformLocation(shader, "enableShadows"), enableShadows);
     if (enableShadows) {
@@ -1018,11 +1130,13 @@ void render()
     glUniform1f(glGetUniformLocation(shader, "shadowSharpness"), shadowSharpness);
 
     //TEXTURE UNIFORMS
+    glUniform1i(glGetUniformLocation(shader, "useNormals"), useNormals);
     glUniform1i(glGetUniformLocation(shader, "diffuseMap"), 0);
     glUniform1i(glGetUniformLocation(shader, "normalMap"),  1);
     glUniform1i(glGetUniformLocation(shader, "specularMap"), 2);
     glUniform1i(glGetUniformLocation(shader, "shadowMap"), 3);
 
+    
     //LIGHT UNIFORMS
     glUniform3fv(glGetUniformLocation(shader, "pointLightPos"), 1, glm::value_ptr(lights[0].position));
     glUniform3fv(glGetUniformLocation(shader, "pointLightColor"), 1, glm::value_ptr(lights[0].color));
@@ -1035,7 +1149,12 @@ void render()
     glUniform1f(glGetUniformLocation(shader, "spotLightOuterCutoff"), lights[1].outerCutoff);
     glUniform3fv(glGetUniformLocation(shader, "eyePosition"), 1, glm::value_ptr(cameraPos));
 
-    ///////////////////////////////////////////////////////////////////////////
+    // draw the models
+    for (modelInstance& model : models) {
+        drawModel(model, deltaTime, shader);
+    }
+
+    /////////////////////////////////////////////////////////////////////////
     // draw the skybox
 
     glDepthFunc(GL_LEQUAL);  // Change depth function so depth test passes when values are equal to depth buffer's content
@@ -1056,6 +1175,13 @@ void render()
     glEnable(GL_CULL_FACE); // Re-enable culling
     glDepthFunc(GL_LESS); // Set depth function back to default
     ///////////////////////////////////////////////////////////////////////////
+    // Render the fbo
+    renderFbo();
+
+
+    
+
+    
 }
 
 /*****************************************************************************/
