@@ -143,7 +143,7 @@ std::vector<Vertex> vertices;
 
 // define OpenGL object IDs to represent the vertex array, shader program, and texture in the GPU
 GLuint tailsVAO, tailsVBO, chessVAO, chessVBO, sonicVAO, sonicVBO, knucklesVAO, knucklesVBO;
-GLuint tailsTex[4], sonicTex[4], chessTex[4], knucklesTex[4];
+GLuint tailsTex[4], sonicTex[4], chessTex[4], knucklesTex[4], celShadingMap;
 GLuint shader;
 GLuint vao, vbo;
 
@@ -658,6 +658,7 @@ bool setup()
     if (!loadTexture(tailsTex, "Tails")) return false;
     if (!loadTexture(chessTex, "Chess")) return false;
 
+    celShadingMap = gdevLoadTexture("celShading.png", GL_CLAMP_TO_EDGE, true, true);  // usually in tex unit 4, after diffuse, normal, specular, and shadow
 
     // enable OpenGL blending so that texels with alpha values less than one are drawn transparent
     // (you can omit these lines if you don't use alpha)
@@ -696,8 +697,8 @@ bool useNormals = true;
 bool useNormalsPressed = false;
 int currentLight = 1;
 bool currentLightPressed = false;
-bool makeFlashlight = false;
-bool makeFlashlightPressed = false;
+bool flashlightMode = false;
+bool flashlightModePressed = false;
 bool enableShadows = true;
 bool enableShadowsPressed = false;
 bool moveModels = true;
@@ -812,12 +813,12 @@ bool moveModelsPressed = false;
         
     }
 
-    if (glfwGetKey(pWindow, GLFW_KEY_SPACE) == GLFW_PRESS && !makeFlashlightPressed){
-        makeFlashlight = !makeFlashlight;
-        makeFlashlightPressed = true;
+    if (glfwGetKey(pWindow, GLFW_KEY_SPACE) == GLFW_PRESS && !flashlightModePressed){
+        flashlightMode = !flashlightMode;
+        flashlightModePressed = true;
     }
     if (glfwGetKey(pWindow, GLFW_KEY_SPACE) == GLFW_RELEASE){
-        makeFlashlightPressed = false;
+        flashlightModePressed = false;
     }
 
     if (glfwGetKey(pWindow, GLFW_KEY_P) == GLFW_PRESS && !enableShadowsPressed){
@@ -987,7 +988,7 @@ glm::mat4 calculateModelTransform(modelInstance& instance, float deltaTime, bool
     if (instance.state == MOVING) {
         if (instance.obj == SONIC) {
             modelTransform = glm::rotate(modelTransform, 
-                                        glm::radians(-3600.0f * instance.t),
+                                        glm::radians(-360.0f * instance.t),
                                         glm::vec3(0.0f, 0.0f, 1.0f));
         }
         else if (instance.obj == KNUCKLES) {
@@ -1001,7 +1002,6 @@ glm::mat4 calculateModelTransform(modelInstance& instance, float deltaTime, bool
 
     return modelTransform;
 }
-
 void drawModel (modelInstance& model, float deltaTime, GLuint shader) {
 
     glUniformMatrix4fv(glGetUniformLocation(shader, "prevModelTransform"),
@@ -1062,8 +1062,26 @@ void drawModel (modelInstance& model, float deltaTime, GLuint shader) {
         glActiveTexture(GL_TEXTURE3);
         glBindTexture(GL_TEXTURE_2D, shadowMapTexture);
     }
+    glActiveTexture(GL_TEXTURE4);
+    glBindTexture(GL_TEXTURE_2D, celShadingMap);
     // ... then draw our triangles
     glBindVertexArray(vao);
+
+    switch (model.obj) {
+        case TAILS:
+            glUniform1i(glGetUniformLocation(shader, "useCelShading"), true);
+            break;
+        case SONIC:
+            glUniform1i(glGetUniformLocation(shader, "useCelShading"), true);
+            break;
+        case KNUCKLES:
+            glUniform1i(glGetUniformLocation(shader, "useCelShading"), true);
+            break;
+        case CHESS:
+            glUniform1i(glGetUniformLocation(shader, "useCelShading"), false);
+            break;
+    }
+
     switch (model.obj) {
           case TAILS:
                 glDrawArrays(GL_TRIANGLES, 0, tailsVertices.size());
@@ -1078,6 +1096,7 @@ void drawModel (modelInstance& model, float deltaTime, GLuint shader) {
                 glDrawArrays(GL_TRIANGLES, tailsVertices.size() + sonicVertices.size() + knucklesVertices.size(), chessVertices.size());
                 break;
      }
+     
 
     model.prevModelTransform = modelTransform;
 }
@@ -1101,7 +1120,7 @@ void render()
     movementControls(deltaTime, lights);
     
     
-    if (makeFlashlight) {
+    if (flashlightMode) {
            lights[1].position = cameraPos;
            lights[1].direction = cameraFront;
     }
@@ -1174,9 +1193,10 @@ void render()
     glUniform1i(glGetUniformLocation(shader, "normalMap"),  1);
     glUniform1i(glGetUniformLocation(shader, "specularMap"), 2);
     glUniform1i(glGetUniformLocation(shader, "shadowMap"), 3);
-
+    glUniform1i(glGetUniformLocation(shader, "celShadingMap"), 4);
     
     //LIGHT UNIFORMS
+    glUniform1i(glGetUniformLocation(shader, "flashlightMode"), flashlightMode);
     glUniform3fv(glGetUniformLocation(shader, "pointLightPos"), 1, glm::value_ptr(lights[0].position));
     glUniform3fv(glGetUniformLocation(shader, "pointLightColor"), 1, glm::value_ptr(lights[0].color));
     glUniform3fv(glGetUniformLocation(shader, "pointLightAttenuation"), 1, glm::value_ptr(lights[0].attenuation));
