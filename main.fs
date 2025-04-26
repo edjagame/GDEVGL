@@ -85,6 +85,30 @@ struct lightInstance {
 
 }; 
 
+int kernelWidth = 5;
+
+vec2 texelSize = 1.0 / textureSize(shadowMap, 0);
+vec2 averageBlockerDistance(vec3 position) {
+
+	int blockers = 0;
+    float avgBlockerDepth = 0.0f;
+    for (int i = -kernelWidth/2; i <= kernelWidth/2; i++) {
+        for (int j = -kernelWidth/2; j <= kernelWidth/2; j++) {
+            vec2 offset = vec2(float(i), float(j)) * texelSize * 2;
+            float shadowDepth = texture(shadowMap, position.xy + offset).r;
+            if (shadowDepth < position.z) {
+                avgBlockerDepth += shadowDepth;
+                blockers++;
+            }
+        }
+    }
+    if(blockers > 0) {
+        avgBlockerDepth /= blockers;
+    }
+    
+    return vec2(avgBlockerDepth, blockers);
+}
+
 float percentShadow()
 {
     // perform perspective division and rescale to the [0, 1] range to get the coordinates into the depth texture
@@ -102,37 +126,61 @@ float percentShadow()
         return 0.0f;
     }
 
+    vec2 avgBlockerDepth = averageBlockerDistance(position);
+    float receiverDepth = position.z;
+    float lightSize = 500.f;
+
     float bias = 0.0001f;
-    // access the shadow map at this position
     float percentShadow = 0.0;
-    int filterWidth = 7;
-    int halfWidth = filterWidth / 2;
-    vec2 texelSize = 1.0 / textureSize(shadowMap, 0);
-    
+    int halfWidth = kernelWidth / 2;
+    int totalSamples = 0;
+    // if there are no blockers, no shadow, fully lit, 0.0f
+    if (avgBlockerDepth.y < 1.0) {
+        return 0.0f;
+    } else {
+        float penumbraSize = (receiverDepth - avgBlockerDepth.x) * shadowSharpness / (avgBlockerDepth.x);
+        for(int x = -halfWidth; x <= halfWidth; x++) {
+            for(int y = -halfWidth; y <= halfWidth; y++) {
+                vec2 offset = vec2(x, y) * texelSize * penumbraSize;
+                float shadowDepth = texture(shadowMap, position.xy + offset).r;
 
-    for(int x = -halfWidth; x <= -halfWidth + filterWidth; x++) {
-        for(int y = -halfWidth; y <= -halfWidth + filterWidth; y++) {
-            vec2 offset = vec2(x, y) * texelSize * shadowSharpness;
-            float shadowDepth = texture(shadowMap, position.xy + offset).r;
-
-            if (shadowDepth + bias < position.z) {
-                percentShadow += 1.0f;
-            } else {
-                percentShadow += 0.0f;
+                if (shadowDepth + bias < position.z) {
+                    percentShadow += 1.0f;
+                } 
+                totalSamples++;
             }
         }
     }
 
-    if (percentShadow == 0.0f) {
-        return 0.0f;
-    }
-    if (percentShadow == float((filterWidth + 1) * (filterWidth + 1))) {
-        return 1.0f;
-    }
-
-    percentShadow /= float((filterWidth + 1) * (filterWidth + 1));
+    percentShadow /= totalSamples;
     // if the depth stored in the texture is less than the current fragment's depth, we are in shadow
     return percentShadow;
+}
+
+float simplePercentShadow() {
+    // perform perspective division and rescale to the [0, 1] range to get the coordinates into the depth texture
+    vec3 position = shaderLightSpacePosition.xyz / shaderLightSpacePosition.w;
+    position = position * 0.5f + 0.5f;
+
+    // if the position is outside the light-space frustum, do NOT put the
+    // fragment in shadow, to prevent the scene from becoming dark "by default"
+    // (note that if you have a spot light, you might want to do the opposite --
+    // that is, everything outside the spot light's cone SHOULD be dark by default)
+    if (position.x < 0.0f || position.x > 1.0f
+        || position.y < 0.0f || position.y > 1.0f
+        || position.z < 0.0f || position.z > 1.0f)
+    {
+        return 0.0f;
+    }
+
+    float shadowDepth = texture(shadowMap, position.xy).r;
+    float bias = 0.0001f;
+    
+    if (shadowDepth + bias < position.z) {
+        return 1.0f;
+    } else {
+        return 0.0f;
+    }
 }
 ///////////////////////////////////////////////////////////////////////////////
 

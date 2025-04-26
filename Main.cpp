@@ -540,7 +540,7 @@ void renderFbo()
 void drawModel (modelInstance& model, float deltaTime, GLuint shader);
 
 #define SHADOW_SIZE 2048
-float shadowSharpness = 5.0f;
+float shadowSharpness = 500.0f;
 GLuint shadowMapFbo;      // shadow map framebuffer object
 GLuint shadowMapTexture;  // shadow map texture
 GLuint shadowMapShader;   // shadow map shader
@@ -831,12 +831,12 @@ bool moveModelsPressed = false;
 
 
     if (glfwGetKey(pWindow, GLFW_KEY_SEMICOLON) == GLFW_PRESS && !(glfwGetKey(pWindow, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)) {
-        shadowSharpness += 5.0f * deltaTime;
+        shadowSharpness += 500.0f * deltaTime;
     }
     if (glfwGetKey(pWindow, GLFW_KEY_SEMICOLON) == GLFW_PRESS && (glfwGetKey(pWindow, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)) {
-        shadowSharpness -= 5.0f * deltaTime;
+        shadowSharpness -= 500.0f * deltaTime;
     }
-    shadowSharpness = glm::clamp(shadowSharpness, 0.01f, 100.0f);
+    shadowSharpness = glm::clamp(shadowSharpness, 0.00f, 10000.0f);
 
 
     if (glfwGetKey(pWindow, GLFW_KEY_ENTER) == GLFW_PRESS && !moveModelsPressed){
@@ -1239,6 +1239,8 @@ void render()
 
     prevProjTransform = projectionTransform;
     prevViewTransform = viewTransform;
+
+    std::cout<<shadowSharpness<<std::endl;
 }
 
 /*****************************************************************************/
