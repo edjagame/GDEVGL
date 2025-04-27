@@ -34,17 +34,16 @@ void main()
     // }
 
 
-    // int numSamples = 8;
-    // vec2 velocity = (texture(velocityTexture, shaderTexCoord).xy - 0.5) * 2.0;
-    // vec4 color = texture(colorTexture, shaderTexCoord);// + edgeColor;
+    int numSamples = 8;
+    vec2 velocity = (texture(velocityTexture, shaderTexCoord).xy - 0.5) * 2.0;
+    vec4 color = texture(colorTexture, shaderTexCoord);// + edgeColor;
 
-    // for (int i=1; i < numSamples; i++) {
-    //     vec2 offset = - vec2(float(i) / float(numSamples), 0.0) * velocity ;
-    //     vec4 currentColor = texture(colorTexture, shaderTexCoord + offset);
-    //     color += currentColor;
-    // }
-    // color /= float(numSamples);
-    // fragmentColor = vec4(color.rgb, 1.0); 
+    for (int i=1; i < numSamples; i++) {
+        vec2 offset = - vec2(float(i) / float(numSamples), 0.0) * velocity ;
+        vec4 currentColor = texture(colorTexture, shaderTexCoord + offset);
+        color += currentColor;
+    }
+    color /= float(numSamples);
+    fragmentColor = vec4(color.rgb, 1.0); 
 
-    fragmentColor = texture(colorTexture, shaderTexCoord); 
 }

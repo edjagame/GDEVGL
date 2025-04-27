@@ -143,7 +143,7 @@ std::vector<Vertex> buildingsVertices = loadVerts("./BuildingsVerts.txt");
 std::vector<Vertex> vertices;
 
 // define OpenGL object IDs to represent the vertex array, shader program, and texture in the GPU
-GLuint tailsTex[4], sonicTex[4], chessTex[4], knucklesTex[4], buildingsTex[4];
+GLuint tailsTex[4], sonicTex[4], chessTex[4], knucklesTex[4], buildingsTex[5];
 GLuint celShadingMap;
 GLuint shader;
 GLuint vao, vbo;
@@ -173,7 +173,8 @@ struct modelInstance
     glm::vec2 nextCoords;
     float t = 0;
 
-    glm::mat4 prevModelTransform = glm::mat4(1.0f);
+    glm::mat4 prevModelTransform = glm::mat4(1.0f);\
+    glm::mat4 prevModelTransformReflection = glm::mat4(1.0f);
 };
 std::vector<modelInstance> models = {
     {   
@@ -631,6 +632,7 @@ glm::mat4 renderShadowMap(lightInstance& light, float deltaTime)
 
     // draw the scene
     for (modelInstance& model : models) {
+        if (model.state == STATIC) continue; 
         drawModel(model, deltaTime, shadowMapShader);
     }
     
@@ -1022,7 +1024,7 @@ glm::mat4 calculateModelTransform(modelInstance& instance, float deltaTime, bool
 
     return modelTransform;
 }
-void drawModel (modelInstance& model, float deltaTime, GLuint shader) {
+void drawModel(modelInstance& model, float deltaTime, GLuint shader) {
 
     glUniformMatrix4fv(glGetUniformLocation(shader, "prevModelTransform"),
                     1, GL_FALSE, glm::value_ptr(model.prevModelTransform));
@@ -1120,9 +1122,12 @@ void drawModel (modelInstance& model, float deltaTime, GLuint shader) {
     
     glm::mat4 modelTransformReflection = reflectionMatrix * modelTransform;
 
+    // Draw reflected scene
     glCullFace(GL_FRONT);
     glUniformMatrix4fv(glGetUniformLocation(shader, "modelTransform"),
                         1, GL_FALSE, glm::value_ptr(modelTransformReflection));
+    glUniformMatrix4fv(glGetUniformLocation(shader, "prevModelTransform"),
+                        1, GL_FALSE, glm::value_ptr(model.prevModelTransformReflection));
 
     switch (model.obj) {
           case TAILS:
@@ -1141,11 +1146,14 @@ void drawModel (modelInstance& model, float deltaTime, GLuint shader) {
                 glDrawArrays(GL_TRIANGLES, tailsVertices.size() + sonicVertices.size() + knucklesVertices.size() + chessVertices.size(), buildingsVertices.size());
                 break;
      }
-     
+    
+
+     // Draw normal scene
     glCullFace(GL_BACK);
     glUniformMatrix4fv(glGetUniformLocation(shader, "modelTransform"),
                         1, GL_FALSE, glm::value_ptr(modelTransform));
-    
+    glUniformMatrix4fv(glGetUniformLocation(shader, "prevModelTransform"),
+                        1, GL_FALSE, glm::value_ptr(model.prevModelTransform));
     switch (model.obj) {
         case TAILS:
                 glDrawArrays(GL_TRIANGLES, 0, tailsVertices.size());
@@ -1166,6 +1174,7 @@ void drawModel (modelInstance& model, float deltaTime, GLuint shader) {
 
     
     model.prevModelTransform = modelTransform;
+    model.prevModelTransformReflection = modelTransformReflection;
 }
 // called by the main function to do rendering per frame
 int current = 0;
