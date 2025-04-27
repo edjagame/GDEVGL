@@ -94,7 +94,7 @@ vec2 averageBlockerDistance(vec3 position) {
     float avgBlockerDepth = 0.0f;
     for (int i = -kernelWidth/2; i <= kernelWidth/2; i++) {
         for (int j = -kernelWidth/2; j <= kernelWidth/2; j++) {
-            vec2 offset = vec2(float(i), float(j)) * texelSize * 2;
+            vec2 offset = vec2(float(i), float(j)) * texelSize * 3;
             float shadowDepth = texture(shadowMap, position.xy + offset).r;
             if (shadowDepth < position.z) {
                 avgBlockerDepth += shadowDepth;

@@ -709,10 +709,14 @@ bool moveModelsPressed = false;
      float cameraSpeed = deltaTime * 20;
      
      // Scene Bounds
-     const float MIN_Y = 3.0f;
+    //  const float MIN_Y = 3.0f;
+    //  const float MAX_Y = 100.0f;
+    //  const float MIN_XZ = -70.0f;
+    //  const float MAX_XZ = 70.0f;
+    const float MIN_Y = -300.0f;
      const float MAX_Y = 100.0f;
-     const float MIN_XZ = -70.0f;
-     const float MAX_XZ = 70.0f;
+     const float MIN_XZ = -700.0f;
+     const float MAX_XZ = 700.0f;
  
      // Move camera
      if (glfwGetKey(pWindow, GLFW_KEY_W) == GLFW_PRESS) cameraPos += cameraSpeed * cameraFront;
@@ -1082,6 +1086,16 @@ void drawModel (modelInstance& model, float deltaTime, GLuint shader) {
             break;
     }
 
+    glm::mat4 reflectionMatrix = glm::mat4(1.0f);
+    reflectionMatrix = glm::scale(reflectionMatrix, glm::vec3(1.0f, -1.0f, 1.0f));
+    reflectionMatrix = glm::translate(reflectionMatrix, glm::vec3(0.0f, -200.0f, 0.0f));
+    
+    glm::mat4 modelTransformReflection = reflectionMatrix * modelTransform;
+
+    glCullFace(GL_FRONT);
+    glUniformMatrix4fv(glGetUniformLocation(shader, "modelTransform"),
+                        1, GL_FALSE, glm::value_ptr(modelTransformReflection));
+
     switch (model.obj) {
           case TAILS:
                 glDrawArrays(GL_TRIANGLES, 0, tailsVertices.size());
@@ -1097,7 +1111,26 @@ void drawModel (modelInstance& model, float deltaTime, GLuint shader) {
                 break;
      }
      
+    glCullFace(GL_BACK);
+    glUniformMatrix4fv(glGetUniformLocation(shader, "modelTransform"),
+                        1, GL_FALSE, glm::value_ptr(modelTransform));
+    
+    switch (model.obj) {
+        case TAILS:
+                glDrawArrays(GL_TRIANGLES, 0, tailsVertices.size());
+                break;
+        case SONIC:
+                glDrawArrays(GL_TRIANGLES, tailsVertices.size(), sonicVertices.size());
+                break;
+        case KNUCKLES:
+                glDrawArrays(GL_TRIANGLES, tailsVertices.size() + sonicVertices.size(), knucklesVertices.size());
+                break;
+        case CHESS:
+                glDrawArrays(GL_TRIANGLES, tailsVertices.size() + sonicVertices.size() + knucklesVertices.size(), chessVertices.size());
+                break;
+    }
 
+    
     model.prevModelTransform = modelTransform;
 }
 // called by the main function to do rendering per frame
@@ -1209,6 +1242,8 @@ void render()
     glUniform3fv(glGetUniformLocation(shader, "eyePosition"), 1, glm::value_ptr(cameraPos));
 
     
+    
+    
     // draw the models
     for (modelInstance& model : models) {
         drawModel(model, deltaTime, shader);
@@ -1240,7 +1275,6 @@ void render()
     prevProjTransform = projectionTransform;
     prevViewTransform = viewTransform;
 
-    std::cout<<shadowSharpness<<std::endl;
 }
 
 /*****************************************************************************/
