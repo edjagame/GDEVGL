@@ -249,6 +249,7 @@ void main()
         return;
     }
     // Setting the texture
+    float textureAlpha = texture(diffuseMap, shaderTexCoord).a;
     vec3 textureDiffuse = vec3(texture(diffuseMap, shaderTexCoord));
     vec3 textureSpecular = vec3(texture(specularMap, shaderTexCoord));
     // look up the normal from the normal map, then reorient it with the current model transform via the TBN matrix
@@ -288,9 +289,8 @@ void main()
         light += skyboxColor * reflectivity * 0.2;
     }
 
-    fragmentColor = vec4(light, 1.0f);
+    fragmentColor = vec4(light, textureAlpha);
 
-    
     float e = 0.0001;
     if (currPos.w == 0.0 || prevPos.w == 0.0) {
         velocity = vec2(0.5, 0.5);

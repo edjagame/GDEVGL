@@ -140,10 +140,11 @@ std::vector<Vertex> sonicVertices = loadVerts("./SonicVerts.txt");
 std::vector<Vertex> knucklesVertices = loadVerts("./KnucklesVerts.txt");
 std::vector<Vertex> chessVertices = loadVerts("./ChessVerts.txt");
 std::vector<Vertex> buildingsVertices = loadVerts("./BuildingsVerts.txt");
+std::vector<Vertex> mirrorVertices = loadVerts("./MirrorVerts.txt");
 std::vector<Vertex> vertices;
 
 // define OpenGL object IDs to represent the vertex array, shader program, and texture in the GPU
-GLuint tailsTex[4], sonicTex[4], chessTex[4], knucklesTex[4], buildingsTex[5];
+GLuint tailsTex[4], sonicTex[4], chessTex[4], knucklesTex[4], buildingsTex[5], mirrorTex[4];
 GLuint celShadingMap;
 GLuint shader;
 GLuint vao, vbo;
@@ -158,7 +159,7 @@ const float originZ = -47.0;
 const float offsetX = 0;
 const float offsetZ = 0;
 
-enum object {TAILS, SONIC, KNUCKLES, CHESS, BUILDINGS};
+enum object {TAILS, SONIC, KNUCKLES, CHESS, BUILDINGS, MIRROR};
 enum state {IDLE, ROTATING, MOVING, STATIC};
 struct modelInstance
 {
@@ -173,7 +174,7 @@ struct modelInstance
     glm::vec2 nextCoords;
     float t = 0;
 
-    glm::mat4 prevModelTransform = glm::mat4(1.0f);\
+    glm::mat4 prevModelTransform = glm::mat4(1.0f);
     glm::mat4 prevModelTransformReflection = glm::mat4(1.0f);
 
     std::vector<glm::mat4> afterimageTransforms;
@@ -242,7 +243,13 @@ std::vector<modelInstance> models = {
         1.0f,
         STATIC,
     },
-    
+    {
+        MIRROR,
+        {0.0f, 0.0f, 0.0f},
+        0.0f,
+        1.0f,
+        STATIC,
+    }
 };
 
 //LIGHTING VARIABLES
@@ -661,6 +668,7 @@ bool setup()
     vertices.insert(vertices.end(), knucklesVertices.begin(), knucklesVertices.end());
     vertices.insert(vertices.end(), chessVertices.begin(), chessVertices.end());
     vertices.insert(vertices.end(), buildingsVertices.begin(), buildingsVertices.end());
+    vertices.insert(vertices.end(), mirrorVertices.begin(), mirrorVertices.end());
     // upload the TAILS model to the GPU (explanations omitted for brevity)
 
     setVAO(vao, vbo, vertices);
@@ -678,6 +686,7 @@ bool setup()
     if (!loadTexture(tailsTex, "Tails")) return false;
     if (!loadTexture(chessTex, "Chess")) return false;
     if (!loadTexture(buildingsTex, "Buildings")) return false;
+    if (!loadTexture(mirrorTex, "Mirror")) return false;
     buildingsTex[4] = gdevLoadTexture("BuildingsReflectionMap.png", GL_REPEAT, true, true); // buildings normal map
     celShadingMap = gdevLoadTexture("celShading.png", GL_CLAMP_TO_EDGE, true, true);  // usually in tex unit 4, after diffuse, normal, specular, and shadow
 
@@ -731,7 +740,7 @@ bool moveModelsPressed = false;
      
      // Scene Bounds
      const float MIN_Y = 3.0f;
-     const float MAX_Y = 250.0f;
+     const float MAX_Y = 200.0f;
      const float MIN_XZ = -70.0f;
      const float MAX_XZ = 70.0f;
  
@@ -1019,6 +1028,13 @@ glm::mat4 calculateModelTransform(modelInstance& instance, float deltaTime, bool
         }
     }
 
+    if (instance.obj == MIRROR) {
+        modelTransform = glm::rotate(modelTransform, 
+                                        glm::radians(90.0f),
+                                        glm::vec3(0.0f, 1.0f, 0.0f));
+        modelTransform = glm::translate(modelTransform,
+                                        glm::vec3(150.0f, 0.0f, 0.0f)); // translate xyz
+    }
     // Scale back to original size using the inverse of the scaling matrix
 
     return modelTransform;
@@ -1050,6 +1066,9 @@ void drawModel(modelInstance& model, float deltaTime, GLuint shader, bool mainPa
         case BUILDINGS:
             glBindTexture(GL_TEXTURE_2D, buildingsTex[0]);
             break;
+        case MIRROR:
+            glBindTexture(GL_TEXTURE_2D, mirrorTex[0]);
+            break;
     }
     glActiveTexture(GL_TEXTURE1);
     switch (model.obj) {
@@ -1067,6 +1086,9 @@ void drawModel(modelInstance& model, float deltaTime, GLuint shader, bool mainPa
             break;
         case BUILDINGS:
             glBindTexture(GL_TEXTURE_2D, buildingsTex[1]);
+            break;
+        case MIRROR:
+            glBindTexture(GL_TEXTURE_2D, mirrorTex[1]);
             break;
     }
     glActiveTexture(GL_TEXTURE2);
@@ -1086,6 +1108,9 @@ void drawModel(modelInstance& model, float deltaTime, GLuint shader, bool mainPa
         case BUILDINGS:
             glBindTexture(GL_TEXTURE_2D, buildingsTex[2]);
             break;
+        case MIRROR:
+            glBindTexture(GL_TEXTURE_2D, mirrorTex[2]);
+            break;
     }
 
     if (enableShadows) {
@@ -1098,6 +1123,7 @@ void drawModel(modelInstance& model, float deltaTime, GLuint shader, bool mainPa
     glBindVertexArray(vao);
 
     // object-specific uniforms
+    glUniform1i(glGetUniformLocation(shader, "useAlpha"), false);
     switch (model.obj) {
         case TAILS:
             glUniform1i(glGetUniformLocation(shader, "useCelShading"), true);
@@ -1122,6 +1148,11 @@ void drawModel(modelInstance& model, float deltaTime, GLuint shader, bool mainPa
             glBindTexture(GL_TEXTURE_CUBE_MAP, skyboxTexture);
             glUniform1i(glGetUniformLocation(shader, "useCelShading"), false);
             glUniform1i(glGetUniformLocation(shader, "useReflection"), true);
+            break;
+        case MIRROR:
+            glUniform1i(glGetUniformLocation(shader, "useCelShading"), false);
+            glUniform1i(glGetUniformLocation(shader, "useReflection"), false);
+            glUniform1i(glGetUniformLocation(shader, "useAlpha"), true);
             break;
     }
 
@@ -1180,6 +1211,11 @@ void drawModel(modelInstance& model, float deltaTime, GLuint shader, bool mainPa
         case BUILDINGS:
                 glDrawArrays(GL_TRIANGLES, tailsVertices.size() + sonicVertices.size() + knucklesVertices.size() + chessVertices.size(), buildingsVertices.size());
                 break;
+        case MIRROR:
+                glEnable(GL_BLEND);
+                glDrawArrays(GL_TRIANGLES, tailsVertices.size() + sonicVertices.size() + knucklesVertices.size() + chessVertices.size() + buildingsVertices.size(), mirrorVertices.size());
+                glDisable(GL_BLEND);
+                break;
     }
 
     
@@ -1223,7 +1259,7 @@ void render()
     projectionTransform = glm::perspective(glm::radians(fov),                   // fov
                                             (float) WINDOW_WIDTH / WINDOW_HEIGHT,  // aspect ratio
                                             0.1f,                                  // near plane
-                                            350.0f);                               // far plane
+                                            400.0f);                               // far plane
     // ... set up the view matrix...
     viewTransform = glm::lookAt(cameraPos,   // eye position
                                 cameraPos + cameraFront,   // center position
@@ -1301,8 +1337,6 @@ void render()
     glUniform3fv(glGetUniformLocation(shader, "eyePosition"), 1, glm::value_ptr(cameraPos));
 
     
-    
-    
     // draw the models
     for (modelInstance& model : models) {
         // Draw the main model
@@ -1350,6 +1384,8 @@ void render()
                         break;
                     case KNUCKLES:
                         glDrawArrays(GL_TRIANGLES, tailsVertices.size() + sonicVertices.size(), knucklesVertices.size());
+                        break;
+                    default:
                         break;
                 }
             } 

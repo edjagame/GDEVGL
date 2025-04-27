@@ -10,7 +10,7 @@ vertices = []
 normals = []
 tex_coords = []
 indices = [] 
-model = "Buildings"
+model = "Mirror"
 inputFile = f"{model}Object.obj"
 outputFile = f"{model}Verts.txt"
 
