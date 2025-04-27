@@ -10,7 +10,7 @@ vertices = []
 normals = []
 tex_coords = []
 indices = [] 
-model = "Chess"
+model = "Buildings"
 inputFile = f"{model}Object.obj"
 outputFile = f"{model}Verts.txt"
 

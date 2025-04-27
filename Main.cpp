@@ -139,11 +139,12 @@ std::vector<Vertex> tailsVertices = loadVerts("./TailsVerts.txt");
 std::vector<Vertex> sonicVertices = loadVerts("./SonicVerts.txt");
 std::vector<Vertex> knucklesVertices = loadVerts("./KnucklesVerts.txt");
 std::vector<Vertex> chessVertices = loadVerts("./ChessVerts.txt");
+std::vector<Vertex> buildingsVertices = loadVerts("./BuildingsVerts.txt");
 std::vector<Vertex> vertices;
 
 // define OpenGL object IDs to represent the vertex array, shader program, and texture in the GPU
-GLuint tailsVAO, tailsVBO, chessVAO, chessVBO, sonicVAO, sonicVBO, knucklesVAO, knucklesVBO;
-GLuint tailsTex[4], sonicTex[4], chessTex[4], knucklesTex[4], celShadingMap;
+GLuint tailsTex[4], sonicTex[4], chessTex[4], knucklesTex[4], buildingsTex[4];
+GLuint celShadingMap;
 GLuint shader;
 GLuint vao, vbo;
 
@@ -157,8 +158,8 @@ const float originZ = -47.0;
 const float offsetX = 0;
 const float offsetZ = 0;
 
-enum object {TAILS, SONIC, KNUCKLES, CHESS};
-enum state {IDLE, ROTATING, MOVING};
+enum object {TAILS, SONIC, KNUCKLES, CHESS, BUILDINGS};
+enum state {IDLE, ROTATING, MOVING, STATIC};
 struct modelInstance
 {
     object obj;
@@ -223,7 +224,20 @@ std::vector<modelInstance> models = {
         IDLE,
         {1, 5}
     },
-    {CHESS}
+    {
+        CHESS, 
+        {0.0f, 0.0f, 0.0f}, 
+        0.0f, 
+        1.0f, 
+        STATIC, 
+    },
+    {
+        BUILDINGS,
+        {0.0f, 0.0f, 0.0f},
+        0.0f,
+        1.0f,
+        STATIC,
+    },
 };
 
 //LIGHTING VARIABLES
@@ -641,6 +655,7 @@ bool setup()
     vertices.insert(vertices.end(), sonicVertices.begin(), sonicVertices.end());
     vertices.insert(vertices.end(), knucklesVertices.begin(), knucklesVertices.end());
     vertices.insert(vertices.end(), chessVertices.begin(), chessVertices.end());
+    vertices.insert(vertices.end(), buildingsVertices.begin(), buildingsVertices.end());
     // upload the TAILS model to the GPU (explanations omitted for brevity)
 
     setVAO(vao, vbo, vertices);
@@ -657,6 +672,7 @@ bool setup()
     if (!loadTexture(knucklesTex, "Knuckles")) return false;
     if (!loadTexture(tailsTex, "Tails")) return false;
     if (!loadTexture(chessTex, "Chess")) return false;
+    if (!loadTexture(buildingsTex, "Buildings")) return false;
 
     celShadingMap = gdevLoadTexture("celShading.png", GL_CLAMP_TO_EDGE, true, true);  // usually in tex unit 4, after diffuse, normal, specular, and shadow
 
@@ -714,7 +730,7 @@ bool moveModelsPressed = false;
     //  const float MIN_XZ = -70.0f;
     //  const float MAX_XZ = 70.0f;
     const float MIN_Y = -300.0f;
-     const float MAX_Y = 100.0f;
+     const float MAX_Y = 1000.0f;
      const float MIN_XZ = -700.0f;
      const float MAX_XZ = 700.0f;
  
@@ -1030,6 +1046,9 @@ void drawModel (modelInstance& model, float deltaTime, GLuint shader) {
         case CHESS:
             glBindTexture(GL_TEXTURE_2D, chessTex[0]);
             break;
+        case BUILDINGS:
+            glBindTexture(GL_TEXTURE_2D, buildingsTex[0]);
+            break;
     }
     glActiveTexture(GL_TEXTURE1);
     switch (model.obj) {
@@ -1045,6 +1064,9 @@ void drawModel (modelInstance& model, float deltaTime, GLuint shader) {
         case CHESS:
             glBindTexture(GL_TEXTURE_2D, chessTex[1]);
             break;
+        case BUILDINGS:
+            glBindTexture(GL_TEXTURE_2D, buildingsTex[1]);
+            break;
     }
     glActiveTexture(GL_TEXTURE2);
     switch (model.obj) {
@@ -1059,6 +1081,9 @@ void drawModel (modelInstance& model, float deltaTime, GLuint shader) {
             break;
         case CHESS:
             glBindTexture(GL_TEXTURE_2D, chessTex[2]);
+            break;
+        case BUILDINGS:
+            glBindTexture(GL_TEXTURE_2D, buildingsTex[2]);
             break;
     }
 
@@ -1084,11 +1109,14 @@ void drawModel (modelInstance& model, float deltaTime, GLuint shader) {
         case CHESS:
             glUniform1i(glGetUniformLocation(shader, "useCelShading"), false);
             break;
+        case BUILDINGS:
+            glUniform1i(glGetUniformLocation(shader, "useCelShading"), false);
+            break;
     }
 
     glm::mat4 reflectionMatrix = glm::mat4(1.0f);
-    reflectionMatrix = glm::scale(reflectionMatrix, glm::vec3(1.0f, -1.0f, 1.0f));
-    reflectionMatrix = glm::translate(reflectionMatrix, glm::vec3(0.0f, -200.0f, 0.0f));
+    reflectionMatrix = glm::scale(reflectionMatrix, glm::vec3(1.0f, 1.0f, -1.0f));
+    reflectionMatrix = glm::translate(reflectionMatrix, glm::vec3(0.0f, 0.0f, 300.0f));
     
     glm::mat4 modelTransformReflection = reflectionMatrix * modelTransform;
 
@@ -1109,6 +1137,9 @@ void drawModel (modelInstance& model, float deltaTime, GLuint shader) {
           case CHESS:
                 glDrawArrays(GL_TRIANGLES, tailsVertices.size() + sonicVertices.size() + knucklesVertices.size(), chessVertices.size());
                 break;
+            case BUILDINGS:
+                glDrawArrays(GL_TRIANGLES, tailsVertices.size() + sonicVertices.size() + knucklesVertices.size() + chessVertices.size(), buildingsVertices.size());
+                break;
      }
      
     glCullFace(GL_BACK);
@@ -1127,6 +1158,9 @@ void drawModel (modelInstance& model, float deltaTime, GLuint shader) {
                 break;
         case CHESS:
                 glDrawArrays(GL_TRIANGLES, tailsVertices.size() + sonicVertices.size() + knucklesVertices.size(), chessVertices.size());
+                break;
+        case BUILDINGS:
+                glDrawArrays(GL_TRIANGLES, tailsVertices.size() + sonicVertices.size() + knucklesVertices.size() + chessVertices.size(), buildingsVertices.size());
                 break;
     }
 
