@@ -15,23 +15,23 @@ out vec4 fragmentColor;
 
 void main()
 {
-    // float offset[3] = { -1.0f, 0.0f, 1.0f };
-    // float kernel[9] =
-    // {
-    //     -1.0f, -1.0f, -1.0f,
-    //     -1.0f, 8.0f, -1.0f,
-    //     -1.0f, -1.0f, -1.0f
-    // };
-    // vec4 edgeColor = vec4(0.0f, 0.0f, 0.0f, 1.0f);
-    // for (int j = 0; j < 3; j++)
-    // {
-    //     for (int i = 0; i < 3; i++)
-    //     {
-    //     vec2 offsetVec = vec2(offset[i], offset[j]) / screenSize;
-    //     vec3 color = vec3(texture(colorTexture, shaderTexCoord + offsetVec));
-    //     edgeColor += vec4(color * kernel[j * 3 + i], 0.0f);
-    //     }
-    // }
+    float offset[3] = { -1.0f, 0.0f, 1.0f };
+    float kernel[9] =
+    {
+        -1.0f, -1.0f, -1.0f,
+        -1.0f, 8.0f, -1.0f,
+        -1.0f, -1.0f, -1.0f
+    };
+    vec4 edgeColor = vec4(0.0f, 0.0f, 0.0f, 1.0f);
+    for (int j = 0; j < 3; j++)
+    {
+        for (int i = 0; i < 3; i++)
+        {
+        vec2 offsetVec = vec2(offset[i], offset[j]) / screenSize;
+        vec3 color = vec3(texture(colorTexture, shaderTexCoord + offsetVec));
+        edgeColor += vec4(color * kernel[j * 3 + i], 0.0f);
+        }
+    }
 
 
     int numSamples = 8;

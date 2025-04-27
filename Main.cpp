@@ -675,7 +675,7 @@ bool setup()
     if (!loadTexture(tailsTex, "Tails")) return false;
     if (!loadTexture(chessTex, "Chess")) return false;
     if (!loadTexture(buildingsTex, "Buildings")) return false;
-
+    buildingsTex[4] = gdevLoadTexture("BuildingsReflectionMap.png", GL_REPEAT, true, true); // buildings normal map
     celShadingMap = gdevLoadTexture("celShading.png", GL_CLAMP_TO_EDGE, true, true);  // usually in tex unit 4, after diffuse, normal, specular, and shadow
 
     // enable OpenGL blending so that texels with alpha values less than one are drawn transparent
@@ -1098,21 +1098,31 @@ void drawModel(modelInstance& model, float deltaTime, GLuint shader) {
     // ... then draw our triangles
     glBindVertexArray(vao);
 
+    // object-specific uniforms
     switch (model.obj) {
         case TAILS:
             glUniform1i(glGetUniformLocation(shader, "useCelShading"), true);
+            glUniform1i(glGetUniformLocation(shader, "useReflection"), false);
             break;
         case SONIC:
             glUniform1i(glGetUniformLocation(shader, "useCelShading"), true);
+            glUniform1i(glGetUniformLocation(shader, "useReflection"), false);
             break;
         case KNUCKLES:
             glUniform1i(glGetUniformLocation(shader, "useCelShading"), true);
+            glUniform1i(glGetUniformLocation(shader, "useReflection"), false);
             break;
         case CHESS:
             glUniform1i(glGetUniformLocation(shader, "useCelShading"), false);
+            glUniform1i(glGetUniformLocation(shader, "useReflection"), false);
             break;
         case BUILDINGS:
+            glActiveTexture(GL_TEXTURE5);
+            glBindTexture(GL_TEXTURE_2D, buildingsTex[4]);
+            glActiveTexture(GL_TEXTURE6);
+            glBindTexture(GL_TEXTURE_CUBE_MAP, skyboxTexture);
             glUniform1i(glGetUniformLocation(shader, "useCelShading"), false);
+            glUniform1i(glGetUniformLocation(shader, "useReflection"), true);
             break;
     }
 
@@ -1270,7 +1280,9 @@ void render()
     glUniform1i(glGetUniformLocation(shader, "specularMap"), 2);
     glUniform1i(glGetUniformLocation(shader, "shadowMap"), 3);
     glUniform1i(glGetUniformLocation(shader, "celShadingMap"), 4);
-    
+    glUniform1i(glGetUniformLocation(shader, "reflectionMap"), 5);
+    glUniform1i(glGetUniformLocation(shader, "skyboxMap"), 6);
+
     //LIGHT UNIFORMS
     glUniform1i(glGetUniformLocation(shader, "flashlightMode"), flashlightMode);
     glUniform3fv(glGetUniformLocation(shader, "pointLightPos"), 1, glm::value_ptr(lights[0].position));

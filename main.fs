@@ -35,6 +35,8 @@ uniform sampler2D normalMap;
 uniform sampler2D specularMap;
 uniform sampler2D shadowMap;
 uniform sampler2D celShadingMap;
+uniform sampler2D reflectionMap;
+uniform samplerCube skyboxMap;
 
 uniform vec2 windowSize;
 
@@ -57,8 +59,9 @@ uniform bool enableShadows;
 // Camera Uniforms
 uniform vec3 eyePosition;
 
-//other
+//Control Uniforms
 uniform bool useCelShading;
+uniform bool useReflection;
 
 layout(location = 0) out vec4 fragmentColor;
 layout(location = 1) out vec2 velocity;
@@ -252,8 +255,7 @@ void main()
     }
     textureNormal = normalize(textureNormal * 2.0f - 1.0f);  // convert range from [0, 1] to [-1, 1]
     vec3 normalDir = normalize(shaderTBN * textureNormal);
-    vec3 viewDir = normalize(shaderPosition);
-    //vec3 viewDir = normalize(eyePosition-shaderPosition);
+    vec3 viewDir = normalize(eyePosition - shaderPosition);
     
     //Point Light calculation
     lightInstance pointLight;
@@ -272,6 +274,13 @@ void main()
     vec3 light = ambient;
     light += (pointLight.diffuse + pointLight.specular) * pointLight.attenuationFactor;
     light += (spotLight.diffuse + spotLight.specular) * spotLight.attenuationFactor;
+
+    if (useReflection) {
+        vec3 reflectionDir = normalize(reflect(viewDir, normalDir));    
+        vec3 skyboxColor = texture(skyboxMap, reflectionDir).xyz;
+        float reflectivity = texture(reflectionMap, shaderTexCoord).x;
+        light += skyboxColor * reflectivity * 0.3;
+    }
 
     fragmentColor = vec4(light, 1.0f);
 
