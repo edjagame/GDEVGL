@@ -175,6 +175,9 @@ struct modelInstance
 
     glm::mat4 prevModelTransform = glm::mat4(1.0f);\
     glm::mat4 prevModelTransformReflection = glm::mat4(1.0f);
+
+    std::vector<glm::mat4> afterimageTransforms;
+    float afterimageTimer = 0.0f;
 };
 std::vector<modelInstance> models = {
     {   
@@ -239,6 +242,7 @@ std::vector<modelInstance> models = {
         1.0f,
         STATIC,
     },
+    
 };
 
 //LIGHTING VARIABLES
@@ -917,7 +921,7 @@ glm::mat4 calculateModelTransform(modelInstance& instance, float deltaTime, bool
     float randomOffset = 0.5f * (rand() % 10) / 10.0f;
     const float idleTime = 0.3f;
     const float rotationTime = 0.5f;
-    const float moveTime = 2.0f;
+    const float moveTime = 1.0f;
 
     // Set to identity matrix at initialization
     glm::mat4 modelTransform = glm::mat4(1.0f);
@@ -1189,6 +1193,10 @@ glm::mat4 prevViewTransform = glm::mat4(1.0f);
 glm::mat4 prevProjTransform = glm::mat4(1.0f);
 glm::mat4 viewTransform = glm::mat4(1.0f);
 glm::mat4 projectionTransform = glm::mat4(1.0f);
+
+float afterimageInterval = 0.1f;
+int maxAfterimages = 10;
+
 void render()
 {
     // randomizes the random seed
@@ -1297,9 +1305,58 @@ void render()
     
     // draw the models
     for (modelInstance& model : models) {
-        drawModel(model, deltaTime, shader, true);
-    }
+        // Draw the main model
+        glUniform1i(glGetUniformLocation(shader, "isAfterimage"), false); 
+        drawModel(model, deltaTime, shader, true); 
 
+        // Afterimage Spawning Logic
+        if (model.state == MOVING) {
+            model.afterimageTimer += deltaTime;
+            if (model.afterimageTimer >= afterimageInterval) {
+                model.afterimageTransforms.push_back(model.prevModelTransform);
+                if (model.afterimageTransforms.size() > maxAfterimages) {
+                    model.afterimageTransforms.erase(model.afterimageTransforms.begin());
+                }
+                model.afterimageTimer -= afterimageInterval; 
+            }
+        } else {
+            if (model.afterimageTransforms.size() > 0) {
+                model.afterimageTimer += deltaTime;
+                if (model.afterimageTimer >= afterimageInterval) {
+                    model.afterimageTransforms.erase(model.afterimageTransforms.begin());
+                    model.afterimageTimer -= afterimageInterval; 
+                }
+            } else {
+                model.afterimageTimer = 0.0f; 
+            }
+        } 
+
+        // Draw Afterimages
+        if (!model.afterimageTransforms.empty()) {
+            glUniform1i(glGetUniformLocation(shader, "isAfterimage"), true);
+            glBindVertexArray(vao); 
+
+            for (const auto& transform : model.afterimageTransforms) {
+                glUniformMatrix4fv(glGetUniformLocation(shader, "modelTransform"), 1, GL_FALSE, glm::value_ptr(transform));
+                glUniformMatrix4fv(glGetUniformLocation(shader, "prevModelTransform"), 1, GL_FALSE, glm::value_ptr(transform));
+
+                glCullFace(GL_BACK); 
+                switch (model.obj) {
+                    case TAILS:
+                        glDrawArrays(GL_TRIANGLES, 0, tailsVertices.size());
+                        break;
+                    case SONIC:
+                        glDrawArrays(GL_TRIANGLES, tailsVertices.size(), sonicVertices.size());
+                        break;
+                    case KNUCKLES:
+                        glDrawArrays(GL_TRIANGLES, tailsVertices.size() + sonicVertices.size(), knucklesVertices.size());
+                        break;
+                }
+            } 
+            
+            glUniform1i(glGetUniformLocation(shader, "isAfterimage"), false);
+        } 
+    }
     /////////////////////////////////////////////////////////////////////////
     // draw the skybox
     glDepthFunc(GL_LEQUAL);  // Change depth function so depth test passes when values are equal to depth buffer's content

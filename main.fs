@@ -63,9 +63,7 @@ uniform vec3 eyePosition;
 //Control Uniforms
 uniform bool useCelShading;
 uniform bool useReflection;
-uniform bool isReflectionPass;
-uniform vec2 mirrorMinXZ;
-uniform vec2 mirrorMaxXZ;
+uniform bool isAfterimage;
 
 layout(location = 0) out vec4 fragmentColor;
 layout(location = 1) out vec2 velocity;
@@ -245,7 +243,11 @@ void spotLightCalculations(inout lightInstance spotLight, vec3 normalDir, vec3 v
 
 void main()
 {
-
+    if (isAfterimage) {
+        fragmentColor = vec4(2.0f, 2.0f, 2.0f, 2.0f);
+        velocity = vec2(0.5f, 0.5f);
+        return;
+    }
     // Setting the texture
     vec3 textureDiffuse = vec3(texture(diffuseMap, shaderTexCoord));
     vec3 textureSpecular = vec3(texture(specularMap, shaderTexCoord));
@@ -291,7 +293,7 @@ void main()
     
     float e = 0.0001;
     if (currPos.w == 0.0 || prevPos.w == 0.0) {
-        velocity = vec2(0.0, 0.0);
+        velocity = vec2(0.5, 0.5);
     } else {
         vec2 currScreenPos = currPos.xy / currPos.w;
         vec2 prevScreenPos = prevPos.xy / prevPos.w;

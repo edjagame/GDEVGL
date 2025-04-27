@@ -47,7 +47,5 @@ void main()
     color /= float(numSamples);
 
     
-    fragmentColor = vec4(color.rgb, originalColor.a); // Set the alpha channel to the original color's alpha
-
-
+    fragmentColor = vec4(color.rgb, 1.0f);
 }
