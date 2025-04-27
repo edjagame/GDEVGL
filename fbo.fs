@@ -15,35 +15,39 @@ out vec4 fragmentColor;
 
 void main()
 {
-    float offset[3] = { -1.0f, 0.0f, 1.0f };
-    float kernel[9] =
-    {
-        -1.0f, -1.0f, -1.0f,
-        -1.0f, 8.0f, -1.0f,
-        -1.0f, -1.0f, -1.0f
-    };
-    vec4 edgeColor = vec4(0.0f, 0.0f, 0.0f, 1.0f);
-    for (int j = 0; j < 3; j++)
-    {
-        for (int i = 0; i < 3; i++)
-        {
-        vec2 offsetVec = vec2(offset[i], offset[j]) / screenSize;
-        vec3 color = vec3(texture(colorTexture, shaderTexCoord + offsetVec));
-        edgeColor += vec4(color * kernel[j * 3 + i], 0.0f);
-        }
-    }
+    // float offset[3] = { -1.0f, 0.0f, 1.0f };
+    // float kernel[9] =
+    // {
+    //     -1.0f, -1.0f, -1.0f,
+    //     -1.0f, 8.0f, -1.0f,
+    //     -1.0f, -1.0f, -1.0f
+    // };
+    // vec4 edgeColor = vec4(0.0f, 0.0f, 0.0f, 1.0f);
+    // for (int j = 0; j < 3; j++)
+    // {
+    //     for (int i = 0; i < 3; i++)
+    //     {
+    //     vec2 offsetVec = vec2(offset[i], offset[j]) / screenSize;
+    //     vec3 color = vec3(texture(colorTexture, shaderTexCoord + offsetVec));
+    //     edgeColor += vec4(color * kernel[j * 3 + i], 0.0f);
+    //     }
+    // }
 
 
     int numSamples = 8;
     vec2 velocity = (texture(velocityTexture, shaderTexCoord).xy - 0.5) * 2.0;
-    vec4 color = texture(colorTexture, shaderTexCoord);// + edgeColor;
+    vec4 originalColor = texture(colorTexture, shaderTexCoord);
+    vec4 color = originalColor;
 
     for (int i=1; i < numSamples; i++) {
-        vec2 offset = - vec2(float(i) / float(numSamples), 0.0) * velocity ;
+        vec2 offset = - vec2(float(i) / float(numSamples), 0.0) * velocity;
         vec4 currentColor = texture(colorTexture, shaderTexCoord + offset);
         color += currentColor;
     }
     color /= float(numSamples);
-    fragmentColor = vec4(color.rgb, 1.0); 
+
+    
+    fragmentColor = vec4(color.rgb, originalColor.a); // Set the alpha channel to the original color's alpha
+
 
 }

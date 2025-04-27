@@ -254,9 +254,9 @@ struct lightInstance {
 };
 lightInstance pointLight = {
     0,                              // Type
-    glm::vec3(30.0f, 70.0f, 30.0f), // Position
+    glm::vec3(0.0f, 250.0f, 00.0f), // Position
     glm::vec3(1.0),                 // Color
-    glm::vec3(1.0, 0.0014, 0.000014), // Attenuation
+    glm::vec3(1.0, 0.00014, 0.00000014), // Attenuation
     glm::vec3(1.0),                 // Direction
     0,                              // Inner Cutoff
     0                               // Outer Cutoff
@@ -427,7 +427,6 @@ bool setupSkybox() {
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);  
     return true;
 }
-
 ///////////////////////////////////////////////////////////////////////////////
 // CUSTOM FRAMEBUFFER CODE
 
@@ -552,7 +551,7 @@ void renderFbo()
 
 ///////////////////////////////////////////////////////////////////////////////
 // SHADOW MAPPING CODE
-void drawModel (modelInstance& model, float deltaTime, GLuint shader);
+void drawModel (modelInstance& model, float deltaTime, GLuint shader, bool mainPass);
 
 #define SHADOW_SIZE 2048
 float shadowSharpness = 500.0f;
@@ -633,7 +632,7 @@ glm::mat4 renderShadowMap(lightInstance& light, float deltaTime)
     // draw the scene
     for (modelInstance& model : models) {
         if (model.state == STATIC) continue; 
-        drawModel(model, deltaTime, shadowMapShader);
+        drawModel(model, deltaTime, shadowMapShader, false);
     }
     
     // set the framebuffer back to the default onscreen buffer
@@ -724,17 +723,13 @@ bool moveModelsPressed = false;
 
  void movementControls(float deltaTime, std::vector<lightInstance> &lights) {
  
-     float cameraSpeed = deltaTime * 20;
+     float cameraSpeed = deltaTime * 60;
      
      // Scene Bounds
-    //  const float MIN_Y = 3.0f;
-    //  const float MAX_Y = 100.0f;
-    //  const float MIN_XZ = -70.0f;
-    //  const float MAX_XZ = 70.0f;
-    const float MIN_Y = -300.0f;
-     const float MAX_Y = 1000.0f;
-     const float MIN_XZ = -700.0f;
-     const float MAX_XZ = 700.0f;
+     const float MIN_Y = 3.0f;
+     const float MAX_Y = 250.0f;
+     const float MIN_XZ = -70.0f;
+     const float MAX_XZ = 70.0f;
  
      // Move camera
      if (glfwGetKey(pWindow, GLFW_KEY_W) == GLFW_PRESS) cameraPos += cameraSpeed * cameraFront;
@@ -1024,7 +1019,7 @@ glm::mat4 calculateModelTransform(modelInstance& instance, float deltaTime, bool
 
     return modelTransform;
 }
-void drawModel(modelInstance& model, float deltaTime, GLuint shader) {
+void drawModel(modelInstance& model, float deltaTime, GLuint shader, bool mainPass) {
 
     glUniformMatrix4fv(glGetUniformLocation(shader, "prevModelTransform"),
                     1, GL_FALSE, glm::value_ptr(model.prevModelTransform));
@@ -1132,31 +1127,32 @@ void drawModel(modelInstance& model, float deltaTime, GLuint shader) {
     
     glm::mat4 modelTransformReflection = reflectionMatrix * modelTransform;
 
-    // Draw reflected scene
-    glCullFace(GL_FRONT);
-    glUniformMatrix4fv(glGetUniformLocation(shader, "modelTransform"),
-                        1, GL_FALSE, glm::value_ptr(modelTransformReflection));
-    glUniformMatrix4fv(glGetUniformLocation(shader, "prevModelTransform"),
-                        1, GL_FALSE, glm::value_ptr(model.prevModelTransformReflection));
+    if (mainPass) {
+        // Draw reflected scene
+        glCullFace(GL_FRONT);
+        glUniformMatrix4fv(glGetUniformLocation(shader, "modelTransform"),
+                            1, GL_FALSE, glm::value_ptr(modelTransformReflection));
+        glUniformMatrix4fv(glGetUniformLocation(shader, "prevModelTransform"),
+                            1, GL_FALSE, glm::value_ptr(model.prevModelTransformReflection));
 
-    switch (model.obj) {
-          case TAILS:
-                glDrawArrays(GL_TRIANGLES, 0, tailsVertices.size());
-                break;
-          case SONIC:
-                glDrawArrays(GL_TRIANGLES, tailsVertices.size(), sonicVertices.size());
-                break;
-          case KNUCKLES:
-                glDrawArrays(GL_TRIANGLES, tailsVertices.size() + sonicVertices.size(), knucklesVertices.size());
-                break;
-          case CHESS:
-                glDrawArrays(GL_TRIANGLES, tailsVertices.size() + sonicVertices.size() + knucklesVertices.size(), chessVertices.size());
-                break;
+        switch (model.obj) {
+            case TAILS:
+                    glDrawArrays(GL_TRIANGLES, 0, tailsVertices.size());
+                    break;
+            case SONIC:
+                    glDrawArrays(GL_TRIANGLES, tailsVertices.size(), sonicVertices.size());
+                    break;
+            case KNUCKLES:
+                    glDrawArrays(GL_TRIANGLES, tailsVertices.size() + sonicVertices.size(), knucklesVertices.size());
+                    break;
+            case CHESS:
+                    glDrawArrays(GL_TRIANGLES, tailsVertices.size() + sonicVertices.size() + knucklesVertices.size(), chessVertices.size());
+                    break;
             case BUILDINGS:
                 glDrawArrays(GL_TRIANGLES, tailsVertices.size() + sonicVertices.size() + knucklesVertices.size() + chessVertices.size(), buildingsVertices.size());
                 break;
-     }
-    
+        }
+    }
 
      // Draw normal scene
     glCullFace(GL_BACK);
@@ -1219,7 +1215,7 @@ void render()
     projectionTransform = glm::perspective(glm::radians(fov),                   // fov
                                             (float) WINDOW_WIDTH / WINDOW_HEIGHT,  // aspect ratio
                                             0.1f,                                  // near plane
-                                            300.0f);                               // far plane
+                                            350.0f);                               // far plane
     // ... set up the view matrix...
     viewTransform = glm::lookAt(cameraPos,   // eye position
                                 cameraPos + cameraFront,   // center position
@@ -1301,7 +1297,7 @@ void render()
     
     // draw the models
     for (modelInstance& model : models) {
-        drawModel(model, deltaTime, shader);
+        drawModel(model, deltaTime, shader, true);
     }
 
     /////////////////////////////////////////////////////////////////////////

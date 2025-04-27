@@ -29,6 +29,7 @@ in vec4 shaderLightSpacePosition;
 
 in vec4 prevPos;
 in vec4 currPos;
+in vec3 worldPos;
 // Map Uniforms
 uniform sampler2D diffuseMap;
 uniform sampler2D normalMap;
@@ -62,6 +63,9 @@ uniform vec3 eyePosition;
 //Control Uniforms
 uniform bool useCelShading;
 uniform bool useReflection;
+uniform bool isReflectionPass;
+uniform vec2 mirrorMinXZ;
+uniform vec2 mirrorMaxXZ;
 
 layout(location = 0) out vec4 fragmentColor;
 layout(location = 1) out vec2 velocity;
@@ -88,7 +92,7 @@ struct lightInstance {
 
 }; 
 
-int kernelWidth = 5;
+int kernelWidth = 4;
 
 vec2 texelSize = 1.0 / textureSize(shadowMap, 0);
 vec2 averageBlockerDistance(vec3 position) {
@@ -241,7 +245,7 @@ void spotLightCalculations(inout lightInstance spotLight, vec3 normalDir, vec3 v
 
 void main()
 {
-    
+
     // Setting the texture
     vec3 textureDiffuse = vec3(texture(diffuseMap, shaderTexCoord));
     vec3 textureSpecular = vec3(texture(specularMap, shaderTexCoord));
@@ -279,7 +283,7 @@ void main()
         vec3 reflectionDir = normalize(reflect(viewDir, normalDir));    
         vec3 skyboxColor = texture(skyboxMap, reflectionDir).xyz;
         float reflectivity = texture(reflectionMap, shaderTexCoord).x;
-        light += skyboxColor * reflectivity * 0.3;
+        light += skyboxColor * reflectivity * 0.2;
     }
 
     fragmentColor = vec4(light, 1.0f);
